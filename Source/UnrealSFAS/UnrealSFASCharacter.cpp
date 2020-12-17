@@ -76,6 +76,18 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AUnrealSFASCharacter::OnResetVR);
 }
 
+void AUnrealSFASCharacter::SpawnWeapon()
+{
+	if (WeaponMesh)
+	{
+		UStaticMeshComponent* meshComponent = NewObject<UStaticMeshComponent>(this);
+		meshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		meshComponent->SetStaticMesh(WeaponMesh);
+		meshComponent->SetWorldTransform(GetMesh()->GetSocketTransform(WeaponSocketName, ERelativeTransformSpace::RTS_World));
+		meshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponSocketName);
+		meshComponent->RegisterComponent();
+	}
+}
 
 void AUnrealSFASCharacter::OnResetVR()
 {
@@ -90,6 +102,13 @@ void AUnrealSFASCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector L
 void AUnrealSFASCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
 {
 		StopJumping();
+}
+
+void AUnrealSFASCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	SpawnWeapon();
 }
 
 void AUnrealSFASCharacter::TurnAtRate(float Rate)

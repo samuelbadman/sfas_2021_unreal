@@ -63,10 +63,25 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// End of APawn interface
 
+	/** Called on game start. */
+	void BeginPlay() override;
+
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+public:
+	/** Set in the derived blueprint to avoid direct constant references. */
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	UStaticMesh* WeaponMesh;
+
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	FName WeaponSocketName;
+
+private:
+	/** Creates a static mesh component attached to a socket in the skeleton. */
+	void SpawnWeapon();
 };
 
