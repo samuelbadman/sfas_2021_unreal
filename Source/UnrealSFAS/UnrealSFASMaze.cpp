@@ -2,6 +2,7 @@
 
 
 #include "UnrealSFASMaze.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 AUnrealSFASMaze::AUnrealSFASMaze()
@@ -23,63 +24,65 @@ void AUnrealSFASMaze::BeginPlay()
 		const float blockWidth = 2.0f;
 		const float blockHeight = 5.0f;
 		const float blockZPos = 50.0f;
+		const float mazeDensity = 0.1f; // In the range 0 - 1. 1 is more dense
 
-		// Array of binary values: 1 = wall, 0 = space
-		uint32 mazeArray[mazeSize] = {	0b11111111111111111111,
-										0b10100000000000000001,
-										0b10101010111111111101,
-										0b10101010001111000101,
-										0b10101010100001010001,
-										0b10101010111111111111,
-										0b10101010000000000001,
-										0b10001011111111111101,
-										0b11111000000000000101,
-										0b10001111111111111101,
-										0b10101111111111111001,
-										0b10100000000000001101,
-										0b10111011111111101001,
-										0b10100010000000101011,
-										0b10101110111110101001,
-										0b10100000100010101101,
-										0b10101110001110100001,
-										0b10111111111110111101,
-										0b10000000000000000001,
-										0b11111111111111111101 };
-
-		float xPos = 0.0f;
-		float yPos = 0.0f;
-		FQuat worldRotation(FVector(0.0f, 0.0f, 1.0f), 0.0f);
-		FVector worldScale(blockWidth, blockWidth, blockHeight);
-		uint32 mazeRow;
-
-		USceneComponent* rootComponent = GetRootComponent();
-
-		// Loop through the binary values to generate the maze as static mesh components attached to the root of this actor
-		for (int32 i = 0; i < mazeSize; i++)
+		if (mazeSize > 0)
 		{
-			yPos = static_cast<float>(i - (mazeSize / 2)) * blockSize;
-			mazeRow = mazeArray[i];
+			// Array of binary values: 1 = wall, 0 = space
+			uint32 mazeArray[mazeSize];
+			const uint32 numBits = (sizeof(mazeArray) / mazeSize) * CHAR_BIT;
 
-			for (int32 j = 0; j < mazeSize; j++)
+			for (size_t i = 0; i < mazeSize; i++)
 			{
-				xPos = static_cast<float>(j - (mazeSize / 2)) * blockSize;
+				uint32 value = 0;
 
-				uint32 mazeValue = (mazeRow >> (mazeSize - (j + 1))) & 1;
-
-				if (mazeValue)
+				// Set random bits of value
+				for (uint32 n = 0; n < numBits; n++)
 				{
-					UStaticMeshComponent* meshComponent = NewObject<UStaticMeshComponent>(this);
-					FVector worldPosition(xPos, yPos, blockZPos);
-					FTransform worldXForm(worldRotation, worldPosition, worldScale);
+					if (UKismetMathLibrary::RandomBoolWithWeight(mazeDensity))
+					{
+						value |= (1 << n);
+					}
+				}
 
-					meshComponent->SetStaticMesh(WallMesh);
-					meshComponent->SetWorldTransform(worldXForm);
-					meshComponent->AttachToComponent(rootComponent, FAttachmentTransformRules::KeepWorldTransform);
-					meshComponent->RegisterComponent();
+				// Add the value to the maze
+				mazeArray[i] = value;
+			}
+
+			float xPos = 0.0f;
+			float yPos = 0.0f;
+			FQuat worldRotation(FVector(0.0f, 0.0f, 1.0f), 0.0f);
+			FVector worldScale(blockWidth, blockWidth, blockHeight);
+			uint32 mazeRow;
+
+			USceneComponent* rootComponent = GetRootComponent();
+
+			// Loop through the binary values to generate the maze as static mesh components attached to the root of this actor
+			for (int32 i = 0; i < mazeSize; i++)
+			{
+				yPos = static_cast<float>(i - (mazeSize / 2)) * blockSize;
+				mazeRow = mazeArray[i];
+
+				for (int32 j = 0; j < mazeSize; j++)
+				{
+					xPos = static_cast<float>(j - (mazeSize / 2)) * blockSize;
+
+					uint32 mazeValue = (mazeRow >> (mazeSize - (j + 1))) & 1;
+
+					if (mazeValue)
+					{
+						UStaticMeshComponent* meshComponent = NewObject<UStaticMeshComponent>(this);
+						FVector worldPosition(xPos, yPos, blockZPos);
+						FTransform worldXForm(worldRotation, worldPosition, worldScale);
+
+						meshComponent->SetStaticMesh(WallMesh);
+						meshComponent->SetWorldTransform(worldXForm);
+						meshComponent->AttachToComponent(rootComponent, FAttachmentTransformRules::KeepWorldTransform);
+						meshComponent->RegisterComponent();
+					}
 				}
 			}
 		}
-
 	}
 }
 
