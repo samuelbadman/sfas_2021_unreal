@@ -58,19 +58,36 @@ protected:
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
 
+	/** Put's the player character into the aiming state. */
+	void BeginAim();
+
+	/** Exit's the player character from the aiming state and returns them to their normal state. */
+	void EndAim();
+
+protected:
+	/** Called on game start. */
+	void BeginPlay() override;
+
+	/** Called every tick. */
+	void Tick(float DeltaTime) override;
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// End of APawn interface
-
-	/** Called on game start. */
-	void BeginPlay() override;
 
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	/** Calculates and returns the normalised offset between the actor and control pitches */
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category = Aim)
+	float GetPitchOffset() const;
+
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category = Aim)
+	FORCEINLINE float GetAimBlendWeight() const { return AimBlendWeight; }
 
 public:
 	/** Set in the derived blueprint to avoid direct constant references. */
@@ -83,5 +100,21 @@ public:
 private:
 	/** Creates a static mesh component attached to a socket in the skeleton. */
 	void SpawnWeapon();
+
+	void UpdateCameraZoom(const float DeltaTime);
+	void UpdateCameraLocationOffset(const float DeltaTime);
+
+private:
+	float TargetBoomLength;
+	float DefaultBoomLength;
+	float CameraZoomSpeed;
+	FVector TargetCameraOffset;
+	float AimBlendWeight;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float AimBoomLength;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	FVector CameraAimOffset;
 };
 

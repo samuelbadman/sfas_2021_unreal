@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealSFASCharacter
@@ -38,6 +39,10 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
 
+	// Initialise TargetBoomLength to CameraBoom->TargetArmLength's default length
+	DefaultBoomLength = CameraBoom->TargetArmLength;
+	TargetBoomLength = DefaultBoomLength;
+
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
@@ -45,6 +50,12 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
+
+	CameraZoomSpeed = 4.f;
+	TargetCameraOffset = FVector::ZeroVector;
+	AimBlendWeight = 0.f;
+	AimBoomLength = 150.f;
+	CameraAimOffset = FVector(0.f, 50.f, 50.f);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -56,6 +67,8 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	check(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AUnrealSFASCharacter::BeginAim);
+	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AUnrealSFASCharacter::EndAim);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AUnrealSFASCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AUnrealSFASCharacter::MoveRight);
@@ -89,6 +102,26 @@ void AUnrealSFASCharacter::SpawnWeapon()
 	}
 }
 
+void AUnrealSFASCharacter::UpdateCameraZoom(const float DeltaTime)
+{
+	// If CameraBoom's target arm length is not nearly equal to target camera boom length
+	if (!FMath::IsNearlyEqual(CameraBoom->TargetArmLength, TargetBoomLength, 1.f))
+	{
+		// Smoothly interpolate CameraBoom's target arm length towards the target camera boom length
+		CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetBoomLength, DeltaTime, CameraZoomSpeed);
+	}
+}
+
+void AUnrealSFASCharacter::UpdateCameraLocationOffset(const float DeltaTime)
+{
+	// If CameraBoom's socket offset does not equal the target camera offset
+	if (CameraBoom->SocketOffset != TargetCameraOffset)
+	{
+		// Smoothly interpolate CameraBoom's socket offset to the target camera offset
+		CameraBoom->SocketOffset = FMath::VInterpTo(CameraBoom->SocketOffset, TargetCameraOffset, DeltaTime, 2.f);
+	}
+}
+
 void AUnrealSFASCharacter::OnResetVR()
 {
 	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
@@ -104,11 +137,40 @@ void AUnrealSFASCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector L
 		StopJumping();
 }
 
+void AUnrealSFASCharacter::BeginAim()
+{
+	TargetBoomLength = AimBoomLength;
+	TargetCameraOffset = CameraAimOffset;
+	bUseControllerRotationYaw = true;
+	AimBlendWeight = 1.f;
+}
+
+void AUnrealSFASCharacter::EndAim()
+{
+	TargetBoomLength = DefaultBoomLength;
+	TargetCameraOffset = FVector::ZeroVector;
+	bUseControllerRotationYaw = false;
+	AimBlendWeight = 0.f;
+}
+
 void AUnrealSFASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
 	SpawnWeapon();
+}
+
+void AUnrealSFASCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	UpdateCameraZoom(DeltaTime);
+	UpdateCameraLocationOffset(DeltaTime);
+}
+
+float AUnrealSFASCharacter::GetPitchOffset() const
+{
+	return UKismetMathLibrary::NormalizedDeltaRotator(GetControlRotation(), GetActorRotation()).Pitch;
 }
 
 void AUnrealSFASCharacter::TurnAtRate(float Rate)
