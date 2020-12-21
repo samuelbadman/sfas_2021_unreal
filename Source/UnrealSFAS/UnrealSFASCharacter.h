@@ -103,6 +103,7 @@ private:
 
 	void UpdateCameraZoom(const float DeltaTime);
 	void UpdateCameraLocationOffset(const float DeltaTime);
+	void UpdateViewPitch(const float DeltaTime);
 
 private:
 	float TargetBoomLength;
@@ -110,11 +111,22 @@ private:
 	float CameraZoomSpeed;
 	FVector TargetCameraOffset;
 	float AimBlendWeight;
+	float DefaultViewMinPitch;
+	float DefaultViewMaxPitch;
+	class APlayerCameraManager* CameraManager;
+	float TargetViewPitchMin;
+	float TargetViewPitchMax;
 
 	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
 	float AimBoomLength;
 
 	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
 	FVector CameraAimOffset;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float CameraAimMinPitch;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float CameraAimMaxPitch;
 };
 

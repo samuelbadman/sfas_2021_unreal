@@ -9,6 +9,7 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealSFASCharacter
@@ -56,37 +57,45 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	AimBlendWeight = 0.f;
 	AimBoomLength = 150.f;
 	CameraAimOffset = FVector(0.f, 50.f, 50.f);
+	CameraAimMinPitch = -35.f;
+	CameraAimMaxPitch = 35.f;
+	TargetViewPitchMin = 0.f;
+	TargetViewPitchMax = 0.f;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
-
-void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
+void AUnrealSFASCharacter::BeginPlay()
 {
-	// Set up gameplay key bindings
-	check(PlayerInputComponent);
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
-	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
-	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AUnrealSFASCharacter::BeginAim);
-	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AUnrealSFASCharacter::EndAim);
+	Super::BeginPlay();
 
-	PlayerInputComponent->BindAxis("MoveForward", this, &AUnrealSFASCharacter::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &AUnrealSFASCharacter::MoveRight);
+	// Store default view min and max pitches
+	auto* world = GetWorld();
+	if (world)
+	{
+		CameraManager = UGameplayStatics::GetPlayerCameraManager(world, 0);
+		if (CameraManager)
+		{
+			DefaultViewMinPitch = CameraManager->ViewPitchMin;
+			DefaultViewMaxPitch = CameraManager->ViewPitchMax;
+			TargetViewPitchMin = DefaultViewMinPitch;
+			TargetViewPitchMax = DefaultViewMaxPitch;
+		}
+	}
 
-	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
-	// "turn" handles devices that provide an absolute delta, such as a mouse.
-	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
-	PlayerInputComponent->BindAxis("TurnRate", this, &AUnrealSFASCharacter::TurnAtRate);
-	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
-	PlayerInputComponent->BindAxis("LookUpRate", this, &AUnrealSFASCharacter::LookUpAtRate);
+	SpawnWeapon();
+}
 
-	// handle touch devices
-	PlayerInputComponent->BindTouch(IE_Pressed, this, &AUnrealSFASCharacter::TouchStarted);
-	PlayerInputComponent->BindTouch(IE_Released, this, &AUnrealSFASCharacter::TouchStopped);
+void AUnrealSFASCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
 
-	// VR headset functionality
-	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AUnrealSFASCharacter::OnResetVR);
+	UpdateCameraZoom(DeltaTime);
+	UpdateCameraLocationOffset(DeltaTime);
+	UpdateViewPitch(DeltaTime);
+}
+
+float AUnrealSFASCharacter::GetPitchOffset() const
+{
+	return UKismetMathLibrary::NormalizedDeltaRotator(GetControlRotation(), GetActorRotation()).Pitch;
 }
 
 void AUnrealSFASCharacter::SpawnWeapon()
@@ -122,6 +131,53 @@ void AUnrealSFASCharacter::UpdateCameraLocationOffset(const float DeltaTime)
 	}
 }
 
+void AUnrealSFASCharacter::UpdateViewPitch(const float DeltaTime)
+{
+	if (CameraManager)
+	{
+		if (!FMath::IsNearlyEqual(CameraManager->ViewPitchMin, TargetViewPitchMin, 2.f))
+		{
+			CameraManager->ViewPitchMin = FMath::FInterpTo(CameraManager->ViewPitchMin, TargetViewPitchMin, DeltaTime, 2.f);
+		}
+
+		if (!FMath::IsNearlyEqual(CameraManager->ViewPitchMax, TargetViewPitchMax, 2.f))
+		{
+			CameraManager->ViewPitchMax = FMath::FInterpTo(CameraManager->ViewPitchMax, TargetViewPitchMax, DeltaTime, 2.f);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Input
+
+void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
+{
+	// Set up gameplay key bindings
+	check(PlayerInputComponent);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AUnrealSFASCharacter::BeginAim);
+	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AUnrealSFASCharacter::EndAim);
+
+	PlayerInputComponent->BindAxis("MoveForward", this, &AUnrealSFASCharacter::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &AUnrealSFASCharacter::MoveRight);
+
+	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
+	// "turn" handles devices that provide an absolute delta, such as a mouse.
+	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
+	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("TurnRate", this, &AUnrealSFASCharacter::TurnAtRate);
+	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+	PlayerInputComponent->BindAxis("LookUpRate", this, &AUnrealSFASCharacter::LookUpAtRate);
+
+	// handle touch devices
+	PlayerInputComponent->BindTouch(IE_Pressed, this, &AUnrealSFASCharacter::TouchStarted);
+	PlayerInputComponent->BindTouch(IE_Released, this, &AUnrealSFASCharacter::TouchStopped);
+
+	// VR headset functionality
+	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AUnrealSFASCharacter::OnResetVR);
+}
+
 void AUnrealSFASCharacter::OnResetVR()
 {
 	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
@@ -143,6 +199,8 @@ void AUnrealSFASCharacter::BeginAim()
 	TargetCameraOffset = CameraAimOffset;
 	bUseControllerRotationYaw = true;
 	AimBlendWeight = 1.f;
+	TargetViewPitchMin = CameraAimMinPitch;
+	TargetViewPitchMax = CameraAimMaxPitch;
 }
 
 void AUnrealSFASCharacter::EndAim()
@@ -151,26 +209,8 @@ void AUnrealSFASCharacter::EndAim()
 	TargetCameraOffset = FVector::ZeroVector;
 	bUseControllerRotationYaw = false;
 	AimBlendWeight = 0.f;
-}
-
-void AUnrealSFASCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-
-	SpawnWeapon();
-}
-
-void AUnrealSFASCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	UpdateCameraZoom(DeltaTime);
-	UpdateCameraLocationOffset(DeltaTime);
-}
-
-float AUnrealSFASCharacter::GetPitchOffset() const
-{
-	return UKismetMathLibrary::NormalizedDeltaRotator(GetControlRotation(), GetActorRotation()).Pitch;
+	TargetViewPitchMin = DefaultViewMinPitch;
+	TargetViewPitchMax = DefaultViewMaxPitch;
 }
 
 void AUnrealSFASCharacter::TurnAtRate(float Rate)
