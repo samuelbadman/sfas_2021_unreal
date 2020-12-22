@@ -64,6 +64,8 @@ protected:
 	/** Exit's the player character from the aiming state and returns them to their normal state. */
 	void EndAim();
 
+	void FireWeapon();
+
 protected:
 	/** Called on game start. */
 	void BeginPlay() override;
@@ -86,16 +88,22 @@ public:
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = Aim)
 	float GetPitchOffset() const;
 
+	/** Returns the current aim blend weight value */
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = Aim)
 	FORCEINLINE float GetAimBlendWeight() const { return AimBlendWeight; }
 
 public:
 	/** Set in the derived blueprint to avoid direct constant references. */
-	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	UPROPERTY(EditDefaultsOnly, Category = Shooting)
 	UStaticMesh* WeaponMesh;
 
-	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = Shooting)
 	FName WeaponSocketName;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = Shooting)
+	class UAnimMontage* FireWeaponAnimMontage;
 
 private:
 	/** Creates a static mesh component attached to a socket in the skeleton. */
@@ -108,7 +116,6 @@ private:
 private:
 	float TargetBoomLength;
 	float DefaultBoomLength;
-	float CameraZoomSpeed;
 	FVector TargetCameraOffset;
 	float AimBlendWeight;
 	float DefaultViewMinPitch;
@@ -128,5 +135,14 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
 	float CameraAimMaxPitch;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float CameraZoomSpeed;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float CameraMoveSpeed;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float ViewPitchAdjustSpeed;
 };
 

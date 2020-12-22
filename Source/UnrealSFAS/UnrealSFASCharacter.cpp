@@ -37,8 +37,9 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
+	CameraBoom->TargetArmLength = 225.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
+	CameraBoom->TargetOffset.Z = 50.0f;
 
 	// Initialise TargetBoomLength to CameraBoom->TargetArmLength's default length
 	DefaultBoomLength = CameraBoom->TargetArmLength;
@@ -53,6 +54,8 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 
 	CameraZoomSpeed = 4.f;
+	CameraMoveSpeed = 4.f;
+	ViewPitchAdjustSpeed = 4.f;
 	TargetCameraOffset = FVector::ZeroVector;
 	AimBlendWeight = 0.f;
 	AimBoomLength = 150.f;
@@ -61,6 +64,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	CameraAimMaxPitch = 35.f;
 	TargetViewPitchMin = 0.f;
 	TargetViewPitchMax = 0.f;
+	FireWeaponAnimMontage = nullptr;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -127,7 +131,7 @@ void AUnrealSFASCharacter::UpdateCameraLocationOffset(const float DeltaTime)
 	if (CameraBoom->SocketOffset != TargetCameraOffset)
 	{
 		// Smoothly interpolate CameraBoom's socket offset to the target camera offset
-		CameraBoom->SocketOffset = FMath::VInterpTo(CameraBoom->SocketOffset, TargetCameraOffset, DeltaTime, 2.f);
+		CameraBoom->SocketOffset = FMath::VInterpTo(CameraBoom->SocketOffset, TargetCameraOffset, DeltaTime, CameraMoveSpeed);
 	}
 }
 
@@ -135,14 +139,14 @@ void AUnrealSFASCharacter::UpdateViewPitch(const float DeltaTime)
 {
 	if (CameraManager)
 	{
-		if (!FMath::IsNearlyEqual(CameraManager->ViewPitchMin, TargetViewPitchMin, 2.f))
+		if (!FMath::IsNearlyEqual(CameraManager->ViewPitchMin, TargetViewPitchMin, 1.f))
 		{
-			CameraManager->ViewPitchMin = FMath::FInterpTo(CameraManager->ViewPitchMin, TargetViewPitchMin, DeltaTime, 2.f);
+			CameraManager->ViewPitchMin = FMath::FInterpTo(CameraManager->ViewPitchMin, TargetViewPitchMin, DeltaTime, ViewPitchAdjustSpeed);
 		}
 
-		if (!FMath::IsNearlyEqual(CameraManager->ViewPitchMax, TargetViewPitchMax, 2.f))
+		if (!FMath::IsNearlyEqual(CameraManager->ViewPitchMax, TargetViewPitchMax, 1.f))
 		{
-			CameraManager->ViewPitchMax = FMath::FInterpTo(CameraManager->ViewPitchMax, TargetViewPitchMax, DeltaTime, 2.f);
+			CameraManager->ViewPitchMax = FMath::FInterpTo(CameraManager->ViewPitchMax, TargetViewPitchMax, DeltaTime, ViewPitchAdjustSpeed);
 		}
 	}
 }
@@ -158,6 +162,7 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AUnrealSFASCharacter::BeginAim);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AUnrealSFASCharacter::EndAim);
+	PlayerInputComponent->BindAction("FireWeapon", IE_Pressed, this, &AUnrealSFASCharacter::FireWeapon);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AUnrealSFASCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AUnrealSFASCharacter::MoveRight);
@@ -211,6 +216,30 @@ void AUnrealSFASCharacter::EndAim()
 	AimBlendWeight = 0.f;
 	TargetViewPitchMin = DefaultViewMinPitch;
 	TargetViewPitchMax = DefaultViewMaxPitch;
+}
+
+void AUnrealSFASCharacter::FireWeapon()
+{
+	PlayAnimMontage(FireWeaponAnimMontage);
+	if (CameraManager)
+	{
+		const float maxRange = 500.f;
+
+		auto cameraLoc = CameraManager->GetCameraLocation();
+		auto cameraForward = CameraManager->GetActorForwardVector();
+
+		auto* world = GetWorld();
+		if (world)
+		{
+			FHitResult hit;
+			TArray<AActor*> ignoredActors;
+			if (UKismetSystemLibrary::LineTraceSingle(
+				world, cameraLoc, cameraLoc + (cameraForward * maxRange), ETraceTypeQuery::TraceTypeQuery1, false, ignoredActors, EDrawDebugTrace::ForDuration, hit, true))
+			{
+
+			}
+		}
+	}
 }
 
 void AUnrealSFASCharacter::TurnAtRate(float Rate)
