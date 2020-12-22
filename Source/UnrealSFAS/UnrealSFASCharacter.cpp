@@ -23,27 +23,30 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
-	// Don't rotate when the controller rotates. Let that just affect the camera.
+	// Only update the character's yaw when the controller rotates.
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
-	GetCharacterMovement()->JumpZVelocity = 600.f;
-	GetCharacterMovement()->AirControl = 0.2f;
+	GetCharacterMovement()->JumpZVelocity = 300.f;
+	GetCharacterMovement()->AirControl = 0.1f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 225.0f; // The camera follows at this distance behind the character	
+	CameraBoom->TargetArmLength = 175.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
-	CameraBoom->TargetOffset.Z = 50.0f;
+	CameraBoom->TargetOffset.Z = 65.0f;
 
 	// Initialise TargetBoomLength to CameraBoom->TargetArmLength's default length
 	DefaultBoomLength = CameraBoom->TargetArmLength;
 	TargetBoomLength = DefaultBoomLength;
+
+	// Initialise TargetCameraOffset to CameraBoom's socket offset
+	TargetCameraOffset = CameraBoom->SocketOffset;
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -56,7 +59,6 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	CameraZoomSpeed = 4.f;
 	CameraMoveSpeed = 4.f;
 	ViewPitchAdjustSpeed = 4.f;
-	TargetCameraOffset = FVector::ZeroVector;
 	AimBlendWeight = 0.f;
 	AimBoomLength = 150.f;
 	CameraAimOffset = FVector(0.f, 50.f, 50.f);
@@ -160,8 +162,8 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	check(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
-	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AUnrealSFASCharacter::BeginAim);
-	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AUnrealSFASCharacter::EndAim);
+	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AUnrealSFASCharacter::AimWeapon);
+	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AUnrealSFASCharacter::StopAimingWeapon);
 	PlayerInputComponent->BindAction("FireWeapon", IE_Pressed, this, &AUnrealSFASCharacter::FireWeapon);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AUnrealSFASCharacter::MoveForward);
@@ -198,21 +200,19 @@ void AUnrealSFASCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector L
 		StopJumping();
 }
 
-void AUnrealSFASCharacter::BeginAim()
+void AUnrealSFASCharacter::AimWeapon()
 {
 	TargetBoomLength = AimBoomLength;
 	TargetCameraOffset = CameraAimOffset;
-	bUseControllerRotationYaw = true;
 	AimBlendWeight = 1.f;
 	TargetViewPitchMin = CameraAimMinPitch;
 	TargetViewPitchMax = CameraAimMaxPitch;
 }
 
-void AUnrealSFASCharacter::EndAim()
+void AUnrealSFASCharacter::StopAimingWeapon()
 {
 	TargetBoomLength = DefaultBoomLength;
 	TargetCameraOffset = FVector::ZeroVector;
-	bUseControllerRotationYaw = false;
 	AimBlendWeight = 0.f;
 	TargetViewPitchMin = DefaultViewMinPitch;
 	TargetViewPitchMax = DefaultViewMaxPitch;

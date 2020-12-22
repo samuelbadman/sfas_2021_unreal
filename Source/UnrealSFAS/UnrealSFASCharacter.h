@@ -59,10 +59,10 @@ protected:
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
 
 	/** Put's the player character into the aiming state. */
-	void BeginAim();
+	void AimWeapon();
 
 	/** Exit's the player character from the aiming state and returns them to their normal state. */
-	void EndAim();
+	void StopAimingWeapon();
 
 	void FireWeapon();
 
