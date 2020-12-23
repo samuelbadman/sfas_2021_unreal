@@ -92,21 +92,7 @@ public:
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = Aim)
 	FORCEINLINE float GetAimBlendWeight() const { return AimBlendWeight; }
 
-public:
-	/** Set in the derived blueprint to avoid direct constant references. */
-	UPROPERTY(EditDefaultsOnly, Category = Shooting)
-	UStaticMesh* WeaponMesh;
-
-	/** Set in the derived blueprint */
-	UPROPERTY(EditDefaultsOnly, Category = Shooting)
-	FName WeaponSocketName;
-
-	/** Set in the derived blueprint */
-	UPROPERTY(EditDefaultsOnly, Category = Shooting)
-	class UAnimMontage* FireWeaponAnimMontage;
-
 private:
-	/** Creates a static mesh component attached to a socket in the skeleton. */
 	void SpawnWeapon();
 
 	void UpdateCameraZoom(const float DeltaTime);
@@ -125,8 +111,18 @@ private:
 	float TargetViewPitchMin;
 	float TargetViewPitchMax;
 	float GameSecondsAtLastShot;
-	float ShotRecoverTime;
+	class AWeapon* Weapon;
 
+	/** Weapon category */
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	FName WeaponSocketName;
+
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	TSubclassOf<class AWeapon> DefaultWeaponClass;
+	///////////////////////////////////////////////////
+
+	/** Aim category */
 	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
 	float AimBoomLength;
 
@@ -150,5 +146,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
 	float AimMaxWalkSpeed;
+	///////////////////////////////////////////////////
 };
 

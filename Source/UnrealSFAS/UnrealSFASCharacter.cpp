@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "Weapon.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealSFASCharacter
@@ -60,6 +61,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 
+	// Set default member values
 	CameraZoomSpeed = 4.f;
 	CameraMoveSpeed = 4.f;
 	ViewPitchAdjustSpeed = 4.f;
@@ -70,9 +72,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	CameraAimMaxPitch = 35.f;
 	TargetViewPitchMin = 0.f;
 	TargetViewPitchMax = 0.f;
-	FireWeaponAnimMontage = nullptr;
 	GameSecondsAtLastShot = 0.f;
-	ShotRecoverTime = 0.15f;
 	AimMaxWalkSpeed = 275.f;
 }
 
@@ -113,14 +113,23 @@ float AUnrealSFASCharacter::GetPitchOffset() const
 
 void AUnrealSFASCharacter::SpawnWeapon()
 {
-	if (WeaponMesh)
+	// Is the default weapon class valid?
+	if (DefaultWeaponClass)
 	{
-		UStaticMeshComponent* meshComponent = NewObject<UStaticMeshComponent>(this);
-		meshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		meshComponent->SetStaticMesh(WeaponMesh);
-		meshComponent->SetWorldTransform(GetMesh()->GetSocketTransform(WeaponSocketName, ERelativeTransformSpace::RTS_World));
-		meshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponSocketName);
-		meshComponent->RegisterComponent();
+		// Is the world reference valid?
+		auto* world = GetWorld();
+		if (world)
+		{
+			Weapon = world->SpawnActor<AWeapon>(DefaultWeaponClass.Get());
+
+			// Did the weapon spawn correctly?
+			if (Weapon)
+			{
+				// Setup weapon
+				Weapon->SetActorEnableCollision(false);
+				Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, WeaponSocketName);
+			}
+		}
 	}
 }
 
@@ -229,34 +238,34 @@ void AUnrealSFASCharacter::StopAimingWeapon()
 
 void AUnrealSFASCharacter::FireWeapon()
 {
-	auto* world = GetWorld();
-	if (world)
+	// Is the weapon reference valid?
+	if (Weapon)
 	{
-		const float currentGameSeconds = UKismetSystemLibrary::GetGameTimeInSeconds(world);
-		if ((currentGameSeconds - GameSecondsAtLastShot) > ShotRecoverTime)
+		// Is the world valid?
+		auto* world = GetWorld();
+		if (world)
 		{
-			if (CameraManager)
+			// Has enough game time elapsed since the last shot?
+			const float currentGameSeconds = UKismetSystemLibrary::GetGameTimeInSeconds(world);
+			if ((currentGameSeconds - GameSecondsAtLastShot) > Weapon->GetShotRecoverTime())
 			{
-				GameSecondsAtLastShot = currentGameSeconds;
-
-				const float maxRange = 500.f;
-
-				auto cameraLoc = CameraManager->GetCameraLocation();
-				auto cameraForward = CameraManager->GetActorForwardVector();
-
-				if (UKismetSystemLibrary::GetGameTimeInSeconds(world))
+				// Is the camera manager reference vallid?
+				if (CameraManager)
 				{
+					GameSecondsAtLastShot = currentGameSeconds;
 
-				}
+					auto cameraLoc = CameraManager->GetCameraLocation();
+					auto cameraForward = CameraManager->GetActorForwardVector();
 
-				PlayAnimMontage(FireWeaponAnimMontage);
+					PlayAnimMontage(Weapon->GetShotAnimMontage());
 
-				FHitResult hit;
-				TArray<AActor*> ignoredActors;
-				if (UKismetSystemLibrary::LineTraceSingle(
-					world, cameraLoc, cameraLoc + (cameraForward * maxRange), ETraceTypeQuery::TraceTypeQuery1, false, ignoredActors, EDrawDebugTrace::ForDuration, hit, true))
-				{
+					FHitResult hit;
+					TArray<AActor*> ignoredActors;
+					if (UKismetSystemLibrary::LineTraceSingle(
+						world, cameraLoc, cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), ETraceTypeQuery::TraceTypeQuery1, false, ignoredActors, EDrawDebugTrace::ForDuration, hit, true))
+					{
 
+					}
 				}
 			}
 		}
