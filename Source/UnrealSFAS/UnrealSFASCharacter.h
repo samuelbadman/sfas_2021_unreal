@@ -120,9 +120,12 @@ private:
 	float AimBlendWeight;
 	float DefaultViewMinPitch;
 	float DefaultViewMaxPitch;
+	float DefaultMaxWalkSpeed;
 	class APlayerCameraManager* CameraManager;
 	float TargetViewPitchMin;
 	float TargetViewPitchMax;
+	float GameSecondsAtLastShot;
+	float ShotRecoverTime;
 
 	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
 	float AimBoomLength;
@@ -144,5 +147,8 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
 	float ViewPitchAdjustSpeed;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float AimMaxWalkSpeed;
 };
 
