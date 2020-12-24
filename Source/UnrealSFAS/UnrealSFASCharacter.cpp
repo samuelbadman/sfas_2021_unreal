@@ -24,9 +24,9 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
-	// Only update the character's yaw when the controller rotates.
+	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = true;
+	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
@@ -74,6 +74,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	TargetViewPitchMax = 0.f;
 	GameSecondsAtLastShot = 0.f;
 	AimMaxWalkSpeed = 275.f;
+	Aiming = false;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -218,53 +219,61 @@ void AUnrealSFASCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector L
 
 void AUnrealSFASCharacter::AimWeapon()
 {
+	Aiming = true;
 	TargetBoomLength = AimBoomLength;
 	TargetCameraOffset = CameraAimOffset;
 	AimBlendWeight = 1.f;
 	TargetViewPitchMin = CameraAimMinPitch;
 	TargetViewPitchMax = CameraAimMaxPitch;
 	GetCharacterMovement()->MaxWalkSpeed = AimMaxWalkSpeed;
+	bUseControllerRotationYaw = true;
 }
 
 void AUnrealSFASCharacter::StopAimingWeapon()
 {
+	Aiming = false;
 	TargetBoomLength = DefaultBoomLength;
 	TargetCameraOffset = FVector::ZeroVector;
 	AimBlendWeight = 0.f;
 	TargetViewPitchMin = DefaultViewMinPitch;
 	TargetViewPitchMax = DefaultViewMaxPitch;
 	GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
+	bUseControllerRotationYaw = false;
 }
 
 void AUnrealSFASCharacter::FireWeapon()
 {
-	// Is the weapon reference valid?
-	if (Weapon)
+	// Is the player aiming?
+	if (Aiming)
 	{
-		// Is the world valid?
-		auto* world = GetWorld();
-		if (world)
+		// Is the weapon reference valid?
+		if (Weapon)
 		{
-			// Has enough game time elapsed since the last shot?
-			const float currentGameSeconds = UKismetSystemLibrary::GetGameTimeInSeconds(world);
-			if ((currentGameSeconds - GameSecondsAtLastShot) > Weapon->GetShotRecoverTime())
+			// Is the world valid?
+			auto* world = GetWorld();
+			if (world)
 			{
-				// Is the camera manager reference vallid?
-				if (CameraManager)
+				// Has enough game time elapsed since the last shot?
+				const float currentGameSeconds = UKismetSystemLibrary::GetGameTimeInSeconds(world);
+				if ((currentGameSeconds - GameSecondsAtLastShot) > Weapon->GetShotRecoverTime())
 				{
-					GameSecondsAtLastShot = currentGameSeconds;
-
-					auto cameraLoc = CameraManager->GetCameraLocation();
-					auto cameraForward = CameraManager->GetActorForwardVector();
-
-					PlayAnimMontage(Weapon->GetShotAnimMontage());
-
-					FHitResult hit;
-					TArray<AActor*> ignoredActors;
-					if (UKismetSystemLibrary::LineTraceSingle(
-						world, cameraLoc, cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), ETraceTypeQuery::TraceTypeQuery1, false, ignoredActors, EDrawDebugTrace::ForDuration, hit, true))
+					// Is the camera manager reference vallid?
+					if (CameraManager)
 					{
+						GameSecondsAtLastShot = currentGameSeconds;
 
+						auto cameraLoc = CameraManager->GetCameraLocation();
+						auto cameraForward = CameraManager->GetActorForwardVector();
+
+						PlayAnimMontage(Weapon->GetShotAnimMontage());
+
+						FHitResult hit;
+						TArray<AActor*> ignoredActors;
+						if (UKismetSystemLibrary::LineTraceSingle(
+							world, cameraLoc, cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), ETraceTypeQuery::TraceTypeQuery1, false, ignoredActors, EDrawDebugTrace::ForDuration, hit, true))
+						{
+
+						}
 					}
 				}
 			}

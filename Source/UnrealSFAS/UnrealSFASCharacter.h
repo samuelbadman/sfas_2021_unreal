@@ -112,6 +112,7 @@ private:
 	float TargetViewPitchMax;
 	float GameSecondsAtLastShot;
 	class AWeapon* Weapon;
+	bool Aiming;
 
 	/** Weapon category */
 	/** Set in the derived blueprint */
