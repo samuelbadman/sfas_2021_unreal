@@ -3,6 +3,7 @@
 #include "UnrealSFASGameMode.h"
 #include "UnrealSFASCharacter.h"
 #include "UObject/ConstructorHelpers.h"
+#include "UnrealSFASPlayerController.h"
 
 AUnrealSFASGameMode::AUnrealSFASGameMode()
 {
@@ -12,4 +13,7 @@ AUnrealSFASGameMode::AUnrealSFASGameMode()
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
+
+	// Set default player controller class to c++ player controller class
+	PlayerControllerClass = AUnrealSFASPlayerController::StaticClass();
 }

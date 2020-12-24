@@ -58,6 +58,23 @@ protected:
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
 
+	/** Put's the player character into the aiming state. */
+	void AimWeapon();
+
+	/** Exit's the player character from the aiming state and returns them to their normal state. */
+	void StopAimingWeapon();
+
+	void FireWeapon();
+
+	void SwapShoulder();
+
+protected:
+	/** Called on game start. */
+	void BeginPlay() override;
+
+	/** Called every tick. */
+	void Tick(float DeltaTime) override;
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -68,5 +85,74 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	/** Calculates and returns the normalised offset between the actor and control pitches */
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category = Aim)
+	float GetPitchOffset() const;
+
+	/** Returns the current aim blend weight value */
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category = Aim)
+	FORCEINLINE float GetAimBlendWeight() const { return AimBlendWeight; }
+
+private:
+	void SpawnWeapon();
+
+	void UpdateCameraZoom(const float DeltaTime);
+	void UpdateCameraLocationOffset(const float DeltaTime);
+	void UpdateViewPitch(const float DeltaTime);
+
+	void SwapAimingShoulder();
+
+private:
+	float TargetBoomLength;
+	float DefaultBoomLength;
+	FVector TargetCameraOffset;
+	float AimBlendWeight;
+	float DefaultViewMinPitch;
+	float DefaultViewMaxPitch;
+	float DefaultMaxWalkSpeed;
+	class APlayerCameraManager* CameraManager;
+	float TargetViewPitchMin;
+	float TargetViewPitchMax;
+	float GameSecondsAtLastShot;
+	class AWeapon* Weapon;
+	bool Aiming;
+	bool AimingOverRightShoulder;
+	FVector DefaultCameraRelativeLocation;
+
+	/** Weapon category */
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	FName WeaponSocketName;
+
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	TSubclassOf<class AWeapon> DefaultWeaponClass;
+	///////////////////////////////////////////////////
+
+	/** Aim category */
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float AimBoomLength;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	FVector CameraAimOffset;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float CameraAimMinPitch;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float CameraAimMaxPitch;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float CameraZoomSpeed;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float CameraMoveSpeed;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float ViewPitchAdjustSpeed;
+
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float AimMaxWalkSpeed;
+	///////////////////////////////////////////////////
 };
 
