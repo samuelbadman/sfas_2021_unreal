@@ -66,6 +66,8 @@ protected:
 
 	void FireWeapon();
 
+	void SwapShoulder();
+
 protected:
 	/** Called on game start. */
 	void BeginPlay() override;
@@ -99,6 +101,8 @@ private:
 	void UpdateCameraLocationOffset(const float DeltaTime);
 	void UpdateViewPitch(const float DeltaTime);
 
+	void SwapAimingShoulder();
+
 private:
 	float TargetBoomLength;
 	float DefaultBoomLength;
@@ -113,6 +117,8 @@ private:
 	float GameSecondsAtLastShot;
 	class AWeapon* Weapon;
 	bool Aiming;
+	bool AimingOverRightShoulder;
+	FVector DefaultCameraRelativeLocation;
 
 	/** Weapon category */
 	/** Set in the derived blueprint */

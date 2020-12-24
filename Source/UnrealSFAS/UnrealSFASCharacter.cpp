@@ -58,6 +58,8 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	FollowCamera->SetRelativeLocation(FVector(0.f, 35.f, 0.f));
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	DefaultCameraRelativeLocation = FollowCamera->GetRelativeLocation();
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 
@@ -75,6 +77,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	GameSecondsAtLastShot = 0.f;
 	AimMaxWalkSpeed = 275.f;
 	Aiming = false;
+	AimingOverRightShoulder = true;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -170,6 +173,37 @@ void AUnrealSFASCharacter::UpdateViewPitch(const float DeltaTime)
 	}
 }
 
+void AUnrealSFASCharacter::SwapAimingShoulder()
+{
+	if (AimingOverRightShoulder)
+	{
+		// Swap to over left shoulder
+		TargetCameraOffset.Y = -CameraAimOffset.Y;
+		FVector camRelLoc = FollowCamera->GetRelativeLocation();
+		FollowCamera->SetRelativeLocation(FVector(camRelLoc.X, -camRelLoc.Y, camRelLoc.Z));
+		GetMesh()->SetRelativeScale3D(FVector(-1.f, 1.f, 1.f));
+		AimingOverRightShoulder = false;
+		// Also swap the attached weapon's scale
+		if (Weapon)
+		{
+			Weapon->SetActorRelativeScale3D(FVector(-1.f, 1.f, 1.f));
+		}
+	}
+	else
+	{
+		// Swap to over right shoulder
+		TargetCameraOffset.Y = CameraAimOffset.Y;
+		GetMesh()->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
+		FollowCamera->SetRelativeLocation(DefaultCameraRelativeLocation);
+		AimingOverRightShoulder = true;
+		// Also swap the attached weapon's scale
+		if (Weapon)
+		{
+			Weapon->SetActorRelativeScale3D(FVector(1.f, 1.f, 1.f));
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -182,6 +216,7 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AUnrealSFASCharacter::AimWeapon);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AUnrealSFASCharacter::StopAimingWeapon);
 	PlayerInputComponent->BindAction("FireWeapon", IE_Pressed, this, &AUnrealSFASCharacter::FireWeapon);
+	PlayerInputComponent->BindAction("SwapShoulder", IE_Pressed, this, &AUnrealSFASCharacter::SwapShoulder);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AUnrealSFASCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AUnrealSFASCharacter::MoveRight);
@@ -239,6 +274,10 @@ void AUnrealSFASCharacter::StopAimingWeapon()
 	TargetViewPitchMax = DefaultViewMaxPitch;
 	GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
 	bUseControllerRotationYaw = false;
+	if (!AimingOverRightShoulder)
+	{
+		SwapAimingShoulder();
+	}
 }
 
 void AUnrealSFASCharacter::FireWeapon()
@@ -278,6 +317,14 @@ void AUnrealSFASCharacter::FireWeapon()
 				}
 			}
 		}
+	}
+}
+
+void AUnrealSFASCharacter::SwapShoulder()
+{
+	if (Aiming)
+	{
+		SwapAimingShoulder();
 	}
 }
 
