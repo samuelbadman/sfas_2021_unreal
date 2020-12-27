@@ -72,6 +72,10 @@ void AUnrealSFASMaze::BeginPlay()
 					if (mazeValue)
 					{
 						UStaticMeshComponent* meshComponent = NewObject<UStaticMeshComponent>(this);
+
+						// Set the mesh component to affect the nav mesh
+						meshComponent->SetCanEverAffectNavigation(true);
+
 						FVector worldPosition(xPos, yPos, blockZPos);
 						FTransform worldXForm(worldRotation, worldPosition, worldScale);
 
