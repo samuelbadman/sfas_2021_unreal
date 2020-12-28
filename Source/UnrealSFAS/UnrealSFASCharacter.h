@@ -120,6 +120,7 @@ private:
 	bool AimingOverRightShoulder;
 	FVector DefaultCameraRelativeLocation;
 
+	///////////////////////////////////////////////////
 	/** Weapon category */
 	/** Set in the derived blueprint */
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
@@ -128,7 +129,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<class AWeapon> DefaultWeaponClass;
 	///////////////////////////////////////////////////
-
 	/** Aim category */
 	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
 	float AimBoomLength;

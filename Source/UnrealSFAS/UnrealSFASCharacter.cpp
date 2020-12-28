@@ -308,6 +308,7 @@ void AUnrealSFASCharacter::FireWeapon()
 
 						FHitResult hit;
 						TArray<AActor*> ignoredActors;
+						// Trace in the ECC_Visibility channel for any actor except for self.
 						if (UKismetSystemLibrary::LineTraceSingle(
 							world, 
 							cameraLoc,
@@ -319,7 +320,10 @@ void AUnrealSFASCharacter::FireWeapon()
 							hit,
 							true))
 						{
-
+							if (hit.Actor->ActorHasTag(FName("Enemy")))
+							{
+								UE_LOG(LogTemp, Warning, TEXT("Hit enemy"));
+							}
 						}
 					}
 				}
