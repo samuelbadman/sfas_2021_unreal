@@ -309,7 +309,15 @@ void AUnrealSFASCharacter::FireWeapon()
 						FHitResult hit;
 						TArray<AActor*> ignoredActors;
 						if (UKismetSystemLibrary::LineTraceSingle(
-							world, cameraLoc, cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), ETraceTypeQuery::TraceTypeQuery1, false, ignoredActors, EDrawDebugTrace::ForDuration, hit, true))
+							world, 
+							cameraLoc,
+							cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), 
+							UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility), 
+							false,
+							ignoredActors, 
+							EDrawDebugTrace::ForDuration, 
+							hit,
+							true))
 						{
 
 						}
