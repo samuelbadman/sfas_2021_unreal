@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "Perception/AIPerceptionTypes.h"
 #include "EnemyDroneAIController.generated.h"
 
 /**
@@ -14,6 +15,10 @@ class UNREALSFAS_API AEnemyDroneAIController : public AAIController
 {
 	GENERATED_BODY()
 	
+	/** AI perception **/
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI Perception", meta = (AllowPrivateAccess = "true"))
+	class UAIPerceptionComponent* AiPerceptionComponent;
+
 public:
 	AEnemyDroneAIController();
 
@@ -21,7 +26,22 @@ protected:
 	void BeginPlay() override;
 
 private:
-	// Set in the derived blueprint
+	/** Bound as delegate to OnTargetPerceptionUpdate */
+	UFUNCTION()
+	void OnPerceptionUpdate(AActor* Actor, FAIStimulus Stimulus);
+
+private:
+	/** Sight sense configuration */
+	class UAISenseConfig_Sight* AiConfigSight;
+
+	///////////////////////////////////////////////
+	/** Drone AI category */
+	/** Set in the derived blueprint */
 	UPROPERTY(EditDefaultsOnly, Category = "Drone AI", meta = (AllowPrivateAccess = "true"))
 	class UBehaviorTree* BehaviorTreeAsset;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = "Drone AI", meta = (AllowPrivateAccess = "true"))
+	FName CanSeePlayerBlackboardValueName;
+	///////////////////////////////////////////////
 };

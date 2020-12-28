@@ -18,6 +18,11 @@ class AUnrealSFASCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
+
+	/** AI stimuli source */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = AI, meta = (AllowPrivateAccess = "true"))
+	class UAIPerceptionStimuliSourceComponent* AiStimuliSource;
+
 public:
 	AUnrealSFASCharacter();
 
@@ -64,8 +69,10 @@ protected:
 	/** Exit's the player character from the aiming state and returns them to their normal state. */
 	void StopAimingWeapon();
 
+	/** Fire's the player's currently equipped weapon. */
 	void FireWeapon();
 
+	/** Swaps the shoulder the player is looking over when aiming. */
 	void SwapShoulder();
 
 protected:
