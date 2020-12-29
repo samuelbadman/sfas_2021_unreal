@@ -11,17 +11,4 @@ ADroneCharacter::ADroneCharacter()
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 }
 
-// Called when the game starts or when spawned
-void ADroneCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-// Called every frame
-void ADroneCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
 
