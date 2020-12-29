@@ -68,7 +68,6 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 
 	// Create AI stimuli source component
 	AiStimuliSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("SightStimuliSource"));
-	UAIPerceptionSystem::RegisterPerceptionStimuliSource(this, UAISense_Sight::StaticClass(), this);
 
 	// Add "Player" tag to actor
 	Tags.Add(FName("Player"));
@@ -93,6 +92,10 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 void AUnrealSFASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Register AI stimuli source as a sight source
+	AiStimuliSource->bAutoRegister = true;
+	AiStimuliSource->RegisterForSense(UAISense_Sight::StaticClass());
 
 	// Store default view min and max pitches
 	auto* world = GetWorld();

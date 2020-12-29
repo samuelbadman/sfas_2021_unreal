@@ -9,14 +9,17 @@
 AEnemyDroneAIController::AEnemyDroneAIController()
 {
 	// Setup AI sight perception configuration
-	AiConfigSight = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("AIConfigSight"));
-	AiConfigSight->DetectionByAffiliation.bDetectEnemies = true;
-	AiConfigSight->DetectionByAffiliation.bDetectFriendlies = true;
-	AiConfigSight->DetectionByAffiliation.bDetectNeutrals = true;
+	AiSightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("AIConfigSight"));
+	AiSightConfig->PeripheralVisionAngleDegrees = 40.f;
+	AiSightConfig->SightRadius = 2000.f;
+	AiSightConfig->LoseSightRadius = 3000.f;
+	AiSightConfig->DetectionByAffiliation.bDetectEnemies = true;
+	AiSightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	AiSightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 
 	// Setup AI perception component.
 	AiPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerceptionComponent"));
-	AiPerceptionComponent->ConfigureSense(*AiConfigSight);
+	AiPerceptionComponent->ConfigureSense(*AiSightConfig);
 	AiPerceptionComponent->SetDominantSense(UAISenseConfig_Sight::StaticClass());
 	AiPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyDroneAIController::OnPerceptionUpdate);
 
@@ -48,7 +51,16 @@ void AEnemyDroneAIController::OnPerceptionUpdate(AActor* Actor, FAIStimulus Stim
 	// Does the perceived actor have the "Player" tag?
 	if (Actor->ActorHasTag(FName("Player")))
 	{
-		GetBlackboardComponent()->SetValueAsBool(CanSeePlayerBlackboardValueName, true);
-		UE_LOG(LogTemp, Warning, TEXT("Seen player"));
+		// Did the player enter or leave the AI's sight?
+		if (Stimulus.WasSuccessfullySensed())
+		{
+			// Set can see player to true
+			GetBlackboardComponent()->SetValueAsBool(CanSeePlayerBlackboardValueName, true);
+		}
+		else
+		{
+			// Set can see player to false
+			GetBlackboardComponent()->SetValueAsBool(CanSeePlayerBlackboardValueName, false);
+		}
 	}
 }

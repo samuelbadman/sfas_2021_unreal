@@ -32,7 +32,7 @@ private:
 
 private:
 	/** Sight sense configuration */
-	class UAISenseConfig_Sight* AiConfigSight;
+	class UAISenseConfig_Sight* AiSightConfig;
 
 	///////////////////////////////////////////////
 	/** Drone AI category */
