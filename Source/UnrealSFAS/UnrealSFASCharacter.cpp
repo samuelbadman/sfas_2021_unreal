@@ -11,6 +11,9 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Weapon.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
+#include "Perception/AISenseConfig_Sight.h"
+#include "Perception/AIPerceptionSystem.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealSFASCharacter
@@ -63,6 +66,12 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 
+	// Create AI stimuli source component
+	AiStimuliSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("SightStimuliSource"));
+
+	// Add "Player" tag to actor
+	Tags.Add(FName("Player"));
+
 	// Set default member values
 	CameraZoomSpeed = 4.f;
 	CameraMoveSpeed = 4.f;
@@ -83,6 +92,10 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 void AUnrealSFASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Register AI stimuli source as a sight source
+	AiStimuliSource->bAutoRegister = true;
+	AiStimuliSource->RegisterForSense(UAISense_Sight::StaticClass());
 
 	// Store default view min and max pitches
 	auto* world = GetWorld();
@@ -308,10 +321,22 @@ void AUnrealSFASCharacter::FireWeapon()
 
 						FHitResult hit;
 						TArray<AActor*> ignoredActors;
+						// Trace in the ECC_Visibility channel for any actor except for self.
 						if (UKismetSystemLibrary::LineTraceSingle(
-							world, cameraLoc, cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), ETraceTypeQuery::TraceTypeQuery1, false, ignoredActors, EDrawDebugTrace::ForDuration, hit, true))
+							world, 
+							cameraLoc,
+							cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), 
+							UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility), 
+							false,
+							ignoredActors, 
+							EDrawDebugTrace::ForDuration, 
+							hit,
+							true))
 						{
-
+							if (hit.Actor->ActorHasTag(FName("Enemy")))
+							{
+								UE_LOG(LogTemp, Warning, TEXT("Hit enemy"));
+							}
 						}
 					}
 				}

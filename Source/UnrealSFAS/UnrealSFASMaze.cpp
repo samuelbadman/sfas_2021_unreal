@@ -78,6 +78,10 @@ void AUnrealSFASMaze::BeginPlay()
 						meshComponent->SetStaticMesh(WallMesh);
 						meshComponent->SetWorldTransform(worldXForm);
 						meshComponent->AttachToComponent(rootComponent, FAttachmentTransformRules::KeepWorldTransform);
+
+						// Set the mesh component to affect the nav mesh
+						meshComponent->SetCanEverAffectNavigation(true);
+
 						meshComponent->RegisterComponent();
 					}
 				}
