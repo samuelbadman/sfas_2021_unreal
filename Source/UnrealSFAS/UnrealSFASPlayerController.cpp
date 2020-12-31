@@ -4,6 +4,8 @@
 #include "UnrealSFASPlayerController.h"
 #include "UnrealSFASPlayerCameraManager.h"
 #include "GameUI.h"
+#include "Kismet/GameplayStatics.h"
+#include "UnrealSFASGameMode.h"
 
 AUnrealSFASPlayerController::AUnrealSFASPlayerController()
 {
@@ -20,6 +22,8 @@ AUnrealSFASPlayerController::AUnrealSFASPlayerController()
 
 void AUnrealSFASPlayerController::BeginPlay()
 {
+	Super::BeginPlay();
+
 	// Spawn game user interface
 	// Check the game ui class is valid
 	if (GameUIClass)
@@ -29,8 +33,15 @@ void AUnrealSFASPlayerController::BeginPlay()
 		// Check game ui widget created correctly
 		if (GameUI)
 		{
+			// Show the ui
 			GameUI->AddToViewport();
+
+			// Set input mode to only the game
 			SetInputMode(FInputModeGameOnly());
+
+			// Setup initial ui state
+			auto* gameMode = CastChecked<AUnrealSFASGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+			GameUI->SetWaveNumber(gameMode->GetCurrentWaveNumber());
 		}
 	}
 }

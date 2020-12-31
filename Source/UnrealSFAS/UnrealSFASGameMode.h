@@ -13,6 +13,36 @@ class AUnrealSFASGameMode : public AGameModeBase
 
 public:
 	AUnrealSFASGameMode();
+
+	FORCEINLINE int GetCurrentWaveNumber() const { return CurrentWaveNumber; }
+
+protected:
+	void BeginPlay() override;
+
+private:
+	int CurrentWaveNumber;
+
+private:
+	class ASpawnVolume* EnemySpawnVolume;
+
+	//////////////////////////////////
+	/** Enemies category */
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = Enemies, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ASpawnVolume> EnemySpawnVolumeClass;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = Enemies, meta = (AllowPrivateAccess = "true"))
+	FVector EnemySpawnVolumeCenterLocation;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = Enemies, meta = (AllowPrivateAccess = "true"))
+	FVector EnemySpawnVolumeExtent;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = Enemies, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ACharacter> EnemyCharacterClass;
+	//////////////////////////////////
 };
 
 
