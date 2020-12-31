@@ -110,6 +110,9 @@ private:
 
 	void SwapAimingShoulder();
 
+	void ShowHitMarker();
+	void HideHitMarker();
+
 private:
 	float TargetBoomLength;
 	float DefaultBoomLength;
@@ -126,6 +129,8 @@ private:
 	bool Aiming;
 	bool AimingOverRightShoulder;
 	FVector DefaultCameraRelativeLocation;
+
+	FTimerHandle HitMarkerTimerHandle;
 
 	///////////////////////////////////////////////////
 	/** Weapon category */
@@ -161,5 +166,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
 	float AimMaxWalkSpeed;
 	///////////////////////////////////////////////////
+	/** UI category */
+	UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+	float HitMarkerDisplayDuration;
 };
 

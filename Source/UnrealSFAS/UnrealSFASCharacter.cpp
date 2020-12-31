@@ -14,6 +14,8 @@
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AIPerceptionSystem.h"
+#include "UnrealSFASPlayerController.h"
+#include "GameUI.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealSFASCharacter
@@ -87,6 +89,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	AimMaxWalkSpeed = 275.f;
 	Aiming = false;
 	AimingOverRightShoulder = true;
+	HitMarkerDisplayDuration = 0.15f;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -217,6 +220,18 @@ void AUnrealSFASCharacter::SwapAimingShoulder()
 	}
 }
 
+void AUnrealSFASCharacter::ShowHitMarker()
+{
+	auto* UnrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
+	UnrealSFASPlayerController->GetGameUI()->SetHitMarkerVisibility(true);
+}
+
+void AUnrealSFASCharacter::HideHitMarker()
+{
+	auto* UnrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
+	UnrealSFASPlayerController->GetGameUI()->SetHitMarkerVisibility(false);
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -275,6 +290,9 @@ void AUnrealSFASCharacter::AimWeapon()
 	TargetViewPitchMax = CameraAimMaxPitch;
 	GetCharacterMovement()->MaxWalkSpeed = AimMaxWalkSpeed;
 	bUseControllerRotationYaw = true;
+
+	auto* UnrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
+	UnrealSFASPlayerController->GetGameUI()->SetReticleVisibility(true);
 }
 
 void AUnrealSFASCharacter::StopAimingWeapon()
@@ -291,6 +309,9 @@ void AUnrealSFASCharacter::StopAimingWeapon()
 	{
 		SwapAimingShoulder();
 	}
+
+	auto* UnrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
+	UnrealSFASPlayerController->GetGameUI()->SetReticleVisibility(false);
 }
 
 void AUnrealSFASCharacter::FireWeapon()
@@ -336,6 +357,10 @@ void AUnrealSFASCharacter::FireWeapon()
 							if (hit.Actor->ActorHasTag(FName("Enemy")))
 							{
 								UE_LOG(LogTemp, Warning, TEXT("Hit enemy"));
+
+								ShowHitMarker();
+								GetWorldTimerManager().ClearTimer(HitMarkerTimerHandle);
+								GetWorldTimerManager().SetTimer(HitMarkerTimerHandle, this, &AUnrealSFASCharacter::HideHitMarker, HitMarkerDisplayDuration, false);
 							}
 						}
 					}
