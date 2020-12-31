@@ -20,9 +20,13 @@ protected:
 	void BeginPlay() override;
 
 private:
+	void StartWave(int WaveNumber);
+
+private:
 	int CurrentWaveNumber;
 
 private:
+	/** The spawn volume instance used to spawn enemies in. */
 	class ASpawnVolume* EnemySpawnVolume;
 
 	//////////////////////////////////
@@ -39,7 +43,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Enemies, meta = (AllowPrivateAccess = "true"))
 	FVector EnemySpawnVolumeExtent;
 
-	/** Set in the derived blueprint */
+	/** Set in the derived blueprint. The character class to spawn as enemies. */
 	UPROPERTY(EditDefaultsOnly, Category = Enemies, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ACharacter> EnemyCharacterClass;
 	//////////////////////////////////

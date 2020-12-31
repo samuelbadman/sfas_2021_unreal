@@ -24,7 +24,7 @@ AUnrealSFASGameMode::AUnrealSFASGameMode()
 	}
 
 	// Set member default values
-	CurrentWaveNumber = 1;
+	CurrentWaveNumber = 0;
 
 	EnemySpawnVolume = nullptr;
 	EnemySpawnVolumeClass = nullptr;
@@ -38,22 +38,46 @@ void AUnrealSFASGameMode::BeginPlay()
 	Super::BeginPlay();
 
 	auto* world = GetWorld();
+	// Check the world is valid.
 	if (world)
 	{
-		EnemySpawnVolume = world->SpawnActor<ASpawnVolume>(EnemySpawnVolumeClass.Get(), EnemySpawnVolumeCenterLocation, FRotator::ZeroRotator);
-
-		if (EnemySpawnVolume)
+		// Check the enemy spawn volume class has been set.
+		if (EnemySpawnVolumeClass)
 		{
-			auto* volumeBox = EnemySpawnVolume->GetVolume();
-			volumeBox->SetBoxExtent(EnemySpawnVolumeExtent);
+			// Spawn the enemy spawn volume at the requested location.
+			EnemySpawnVolume = world->SpawnActor<ASpawnVolume>(EnemySpawnVolumeClass.Get(), EnemySpawnVolumeCenterLocation, FRotator::ZeroRotator);
 
-			FVector randomLoc = UKismetMathLibrary::RandomPointInBoundingBox(volumeBox->GetComponentLocation(), volumeBox->GetUnscaledBoxExtent());
-			GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, FString::Printf(TEXT("%s"), *randomLoc.ToString()));
-
-			if (EnemyCharacterClass)
+			// Check the enemy spawned correctly.
+			if (EnemySpawnVolume)
 			{
-				world->SpawnActor<ACharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator);
+				// Setup enemy spawn volume.
+				auto* enemySpawnVolumeBox = EnemySpawnVolume->GetVolume();
+				enemySpawnVolumeBox->SetBoxExtent(EnemySpawnVolumeExtent);
+
+				// Start wave 1.
+				StartWave(CurrentWaveNumber++);
 			}
+		}
+	}
+}
+
+void AUnrealSFASGameMode::StartWave(int WaveNumber)
+{
+	// Check the world is valid.
+	auto* world = GetWorld();
+	if (world)
+	{
+		// Check a class has been set to use as the enemy character.
+		if (EnemyCharacterClass)
+		{
+			// Get enemy spawn volume.
+			auto* enemySpawnVolumeBox = EnemySpawnVolume->GetVolume();
+
+			// Find a random location in the enemy spawn volume to spawn an enemy.
+			FVector randomLoc = UKismetMathLibrary::RandomPointInBoundingBox(enemySpawnVolumeBox->GetComponentLocation(), enemySpawnVolumeBox->GetUnscaledBoxExtent());
+
+			// Spawn the enemy at the found location.
+			world->SpawnActor<ACharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator);
 		}
 	}
 }
