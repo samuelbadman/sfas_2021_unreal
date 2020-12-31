@@ -16,4 +16,18 @@ class UNREALSFAS_API AUnrealSFASPlayerController : public APlayerController
 	
 public:
 	AUnrealSFASPlayerController();
+
+	void BeginPlay() override;
+
+	FORCEINLINE class UGameUI* GetGameUI() const { return GameUI; }
+
+private:
+	class UGameUI* GameUI;
+
+	///////////////////////////////////////////////////
+	/** Game user interface category */
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = "Game user interface")
+	TSubclassOf<class UGameUI> GameUIClass;
+	///////////////////////////////////////////////////
 };
