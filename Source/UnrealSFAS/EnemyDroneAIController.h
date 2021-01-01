@@ -24,6 +24,7 @@ public:
 
 protected:
 	void BeginPlay() override;
+	void OnPossess(APawn* InPawn) override;
 
 private:
 	/** Bound as delegate to OnTargetPerceptionUpdate */

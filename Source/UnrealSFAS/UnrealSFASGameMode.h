@@ -34,6 +34,12 @@ private:
 	/** Increments CurrentWaveNumber and starts the wave start cooldown timer to start the next wave. */
 	void StartNextWave();
 
+	/** Event called when a wave is completed. Used to handle events that trigger at the end of a wave: ui updates etc... */
+	void OnWaveComplete();
+
+	/** Event called when a wave starts. Used to handle events that trigger at the start of a wave: ui updates etc...*/
+	void OnWaveStart();
+
 private:
 	int CurrentWaveNumber;
 	int CurrentNumberOfEnemies;

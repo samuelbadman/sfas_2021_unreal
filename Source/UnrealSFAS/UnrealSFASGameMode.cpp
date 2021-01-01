@@ -43,6 +43,9 @@ void AUnrealSFASGameMode::NotifyDroneDestroyed()
 	// Check if all of the enemies in the wave have been defeated.
 	if (CurrentNumberOfEnemies == 0)
 	{
+		// Call the wave complete event.
+		OnWaveComplete();
+
 		StartNextWave();
 	}
 }
@@ -76,8 +79,6 @@ void AUnrealSFASGameMode::BeginPlay()
 
 void AUnrealSFASGameMode::StartWave(int WaveNumber)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, FString::Printf(TEXT("%d"), WaveNumber));
-
 	// Check the world is valid.
 	auto* world = GetWorld();
 	if (world)
@@ -99,6 +100,9 @@ void AUnrealSFASGameMode::StartWave(int WaveNumber)
 				// Spawn the enemy at the found location.
 				world->SpawnActor<ACharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator);
 			}
+
+			// Call the wave started event.
+			OnWaveStart();
 		}
 	}
 }
@@ -116,4 +120,14 @@ void AUnrealSFASGameMode::StartNextWave()
 
 	// Set the timer to begin the wave start cooldown.
 	GetWorldTimerManager().SetTimer(WaveStartCooldownTimerHandle, WaveStartCooldownTimerDelegate, WaveStartCooldownDuration, false);
+}
+
+void AUnrealSFASGameMode::OnWaveComplete()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Cyan, FString::Printf(TEXT("Wave %d complete."), CurrentWaveNumber));
+}
+
+void AUnrealSFASGameMode::OnWaveStart()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Cyan, FString::Printf(TEXT("Wave %d started."), CurrentWaveNumber));
 }

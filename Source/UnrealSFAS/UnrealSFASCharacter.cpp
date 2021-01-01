@@ -16,6 +16,7 @@
 #include "Perception/AIPerceptionSystem.h"
 #include "UnrealSFASPlayerController.h"
 #include "GameUI.h"
+#include "DroneCharacter.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealSFASCharacter
@@ -316,57 +317,60 @@ void AUnrealSFASCharacter::StopAimingWeapon()
 
 void AUnrealSFASCharacter::FireWeapon()
 {
-	// Is the player aiming?
-	if (Aiming)
+	// Is the player aiming and the weapon reference is valid?
+	if (Aiming && (Weapon != nullptr))
 	{
-		// Is the weapon reference valid?
-		if (Weapon)
+		// Is the world valid?
+		auto* world = GetWorld();
+		if (world)
 		{
-			// Is the world valid?
-			auto* world = GetWorld();
-			if (world)
+			// Has enough game time elapsed since the last shot?
+			const float currentGameSeconds = UKismetSystemLibrary::GetGameTimeInSeconds(world);
+			if ((currentGameSeconds - GameSecondsAtLastShot) > Weapon->GetShotRecoverTime())
 			{
-				// Has enough game time elapsed since the last shot?
-				const float currentGameSeconds = UKismetSystemLibrary::GetGameTimeInSeconds(world);
-				if ((currentGameSeconds - GameSecondsAtLastShot) > Weapon->GetShotRecoverTime())
+				// Is the camera manager reference vallid?
+				if (CameraManager)
 				{
-					// Is the camera manager reference vallid?
-					if (CameraManager)
+					GameSecondsAtLastShot = currentGameSeconds;
+
+					auto cameraLoc = CameraManager->GetCameraLocation();
+					auto cameraForward = CameraManager->GetActorForwardVector();
+
+					// Play the weapon shot animation monatage.
+					PlayAnimMontage(Weapon->GetShotAnimMontage());
+
+					FHitResult hit;
+					TArray<AActor*> ignoredActors;
+					// Trace in the ECC_Visibility channel for any actor except for self.
+					if (UKismetSystemLibrary::LineTraceSingle(
+						world, 
+						cameraLoc,
+						cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), 
+						UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility), 
+						false,
+						ignoredActors, 
+						EDrawDebugTrace::ForDuration, 
+						hit,
+						true))
 					{
-						GameSecondsAtLastShot = currentGameSeconds;
-
-						auto cameraLoc = CameraManager->GetCameraLocation();
-						auto cameraForward = CameraManager->GetActorForwardVector();
-
-						// Play the weapon shot animation monatage.
-						PlayAnimMontage(Weapon->GetShotAnimMontage());
-
-						FHitResult hit;
-						TArray<AActor*> ignoredActors;
-						// Trace in the ECC_Visibility channel for any actor except for self.
-						if (UKismetSystemLibrary::LineTraceSingle(
-							world, 
-							cameraLoc,
-							cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), 
-							UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility), 
-							false,
-							ignoredActors, 
-							EDrawDebugTrace::ForDuration, 
-							hit,
-							true))
+						// Check if the hit actor has the "Enemy" tag.
+						if (hit.Actor->ActorHasTag(FName("Enemy")))
 						{
-							// Check if the hit actor has the "Enemy" tag.
-							if (hit.Actor->ActorHasTag(FName("Enemy")))
+							UE_LOG(LogTemp, Warning, TEXT("Hit enemy"));
+
+							// Show the hit marker. Start a timer to hide the hitmarker.
+							ShowHitMarker();
+							GetWorldTimerManager().ClearTimer(HitMarkerTimerHandle);
+							GetWorldTimerManager().SetTimer(HitMarkerTimerHandle, this, &AUnrealSFASCharacter::HideHitMarker, HitMarkerDisplayDuration, false);
+
+							// Cast the hit actor to ADroneCharacter.
+							auto* enemy = Cast<ADroneCharacter>(hit.Actor);
+
+							// Check the cast was successful.
+							if (enemy)
 							{
-								UE_LOG(LogTemp, Warning, TEXT("Hit enemy"));
-
-								// Show the hit marker. Start a timer to hide the hitmarker.
-								ShowHitMarker();
-								GetWorldTimerManager().ClearTimer(HitMarkerTimerHandle);
-								GetWorldTimerManager().SetTimer(HitMarkerTimerHandle, this, &AUnrealSFASCharacter::HideHitMarker, HitMarkerDisplayDuration, false);
-
-								// Damage the enemy
-
+								// Damage the enemy.
+								enemy->RecieveDamage(FMath::FRandRange(Weapon->GetMinDamage(), Weapon->GetMaxDamage()));
 							}
 						}
 					}

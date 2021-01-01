@@ -17,12 +17,19 @@ ADroneCharacter::ADroneCharacter()
 	// Set the AI controller to possess the pawn when placed in the world or spawned.
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
+	// Set spawn collision handling to adjust if possible but always spawn the actor.
+	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
 	// Set member default values.
-	hitpoints = 100.f;
+	hitpoints = 100;
+
+	// The enemy drone AI controller will add the "Enemy" tag when this character is possessed by it.
 }
 
-bool ADroneCharacter::RecieveDamage(float Amount)
+bool ADroneCharacter::RecieveDamage_Implementation(int Amount)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Green, FString::Printf(TEXT("Hit Drone.")));
+
 	// Recieving negative damage can heal the drone.
 	//if (Amount <= 0.f) return false;
 
@@ -30,7 +37,7 @@ bool ADroneCharacter::RecieveDamage(float Amount)
 	hitpoints -= Amount;
 
 	// Check if the drone's hitpoints have been reduced to 0.
-	if (hitpoints <= 0.f)
+	if (hitpoints <= 0)
 	{
 		// Notify the game mode a drone has beeen destroyed.
 		auto* unrealSFASGameMode = CastChecked<AUnrealSFASGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
