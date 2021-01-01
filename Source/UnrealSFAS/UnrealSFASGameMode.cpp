@@ -25,12 +25,26 @@ AUnrealSFASGameMode::AUnrealSFASGameMode()
 
 	// Set member default values
 	CurrentWaveNumber = 0;
+	CurrentNumberOfEnemies = 0;
+	WaveStartCooldownDuration = 5.f;
 
 	EnemySpawnVolume = nullptr;
 	EnemySpawnVolumeClass = nullptr;
 	EnemySpawnVolumeCenterLocation = FVector::ZeroVector;
 	EnemySpawnVolumeExtent = FVector(32.f, 32.f, 32.f);
 	EnemyCharacterClass = nullptr;
+}
+
+void AUnrealSFASGameMode::NotifyDroneDestroyed()
+{
+	// Remove an enemy from the wave.
+	CurrentNumberOfEnemies--;
+
+	// Check if all of the enemies in the wave have been defeated.
+	if (CurrentNumberOfEnemies == 0)
+	{
+		StartNextWave();
+	}
 }
 
 void AUnrealSFASGameMode::BeginPlay()
@@ -54,8 +68,7 @@ void AUnrealSFASGameMode::BeginPlay()
 				auto* enemySpawnVolumeBox = EnemySpawnVolume->GetVolume();
 				enemySpawnVolumeBox->SetBoxExtent(EnemySpawnVolumeExtent);
 
-				// Start wave 1.
-				StartWave(CurrentWaveNumber++);
+				StartNextWave();
 			}
 		}
 	}
@@ -63,6 +76,8 @@ void AUnrealSFASGameMode::BeginPlay()
 
 void AUnrealSFASGameMode::StartWave(int WaveNumber)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, FString::Printf(TEXT("%d"), WaveNumber));
+
 	// Check the world is valid.
 	auto* world = GetWorld();
 	if (world)
@@ -73,11 +88,32 @@ void AUnrealSFASGameMode::StartWave(int WaveNumber)
 			// Get enemy spawn volume.
 			auto* enemySpawnVolumeBox = EnemySpawnVolume->GetVolume();
 
-			// Find a random location in the enemy spawn volume to spawn an enemy.
-			FVector randomLoc = UKismetMathLibrary::RandomPointInBoundingBox(enemySpawnVolumeBox->GetComponentLocation(), enemySpawnVolumeBox->GetUnscaledBoxExtent());
+			CurrentNumberOfEnemies = GetTotalNumberOfEnemiesInWave(WaveNumber);
 
-			// Spawn the enemy at the found location.
-			world->SpawnActor<ACharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator);
+			// For each enemy in the wave.
+			for (int i = 0; i < CurrentNumberOfEnemies; i++)
+			{
+				// Find a random location in the enemy spawn volume to spawn an enemy.
+				FVector randomLoc = UKismetMathLibrary::RandomPointInBoundingBox(enemySpawnVolumeBox->GetComponentLocation(), enemySpawnVolumeBox->GetUnscaledBoxExtent());
+
+				// Spawn the enemy at the found location.
+				world->SpawnActor<ACharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator);
+			}
 		}
 	}
+}
+
+int AUnrealSFASGameMode::GetTotalNumberOfEnemiesInWave(int WaveNumber)
+{
+	const int baseEnemyNumber = 1;
+	return baseEnemyNumber + (2 * WaveNumber);
+}
+
+void AUnrealSFASGameMode::StartNextWave()
+{
+	// Bind StartWave and int parameter to timer delegate.
+	WaveStartCooldownTimerDelegate.BindUFunction(this, FName("StartWave"), ++CurrentWaveNumber);
+
+	// Set the timer to begin the wave start cooldown.
+	GetWorldTimerManager().SetTimer(WaveStartCooldownTimerHandle, WaveStartCooldownTimerDelegate, WaveStartCooldownDuration, false);
 }

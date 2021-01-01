@@ -21,6 +21,8 @@ public:
 	FORCEINLINE class UAnimMontage* GetShotAnimMontage() const { return ShotAnimMontage; }
 	FORCEINLINE float GetShotRecoverTime() const { return ShotRecoverTime; }
 	FORCEINLINE float GetShotMaxRange() const { return ShotMaxRange; }
+	FORCEINLINE float GetMinDamage() const { return MinDamage; }
+	FORCEINLINE float GetMaxDamage() const { return MaxDamage; }
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
@@ -38,5 +40,13 @@ private:
 	/** Set in the derived blueprint */
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	float ShotMaxRange;
+
+	/** Set in the derived blueprint. The minimum amount of damage a shot of this weapon can do. Used as the bottom of a range. */
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	float MinDamage;
+
+	/** Set in the derived blueprint. The maximum amount of damage a shot of this weapon can do. Used as the top of a range. */
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	float MaxDamage;
 	/////////////////////////////////////////////////////////////
 };

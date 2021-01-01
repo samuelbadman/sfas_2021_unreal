@@ -338,6 +338,7 @@ void AUnrealSFASCharacter::FireWeapon()
 						auto cameraLoc = CameraManager->GetCameraLocation();
 						auto cameraForward = CameraManager->GetActorForwardVector();
 
+						// Play the weapon shot animation monatage.
 						PlayAnimMontage(Weapon->GetShotAnimMontage());
 
 						FHitResult hit;
@@ -354,13 +355,18 @@ void AUnrealSFASCharacter::FireWeapon()
 							hit,
 							true))
 						{
+							// Check if the hit actor has the "Enemy" tag.
 							if (hit.Actor->ActorHasTag(FName("Enemy")))
 							{
 								UE_LOG(LogTemp, Warning, TEXT("Hit enemy"));
 
+								// Show the hit marker. Start a timer to hide the hitmarker.
 								ShowHitMarker();
 								GetWorldTimerManager().ClearTimer(HitMarkerTimerHandle);
 								GetWorldTimerManager().SetTimer(HitMarkerTimerHandle, this, &AUnrealSFASCharacter::HideHitMarker, HitMarkerDisplayDuration, false);
+
+								// Damage the enemy
+
 							}
 						}
 					}

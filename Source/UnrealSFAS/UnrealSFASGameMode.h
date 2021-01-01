@@ -14,16 +14,33 @@ class AUnrealSFASGameMode : public AGameModeBase
 public:
 	AUnrealSFASGameMode();
 
+	/** Returns the current wave the game is on. */
 	FORCEINLINE int GetCurrentWaveNumber() const { return CurrentWaveNumber; }
+
+	/** Updates the round when a drone is destroyed. */
+	void NotifyDroneDestroyed();
 
 protected:
 	void BeginPlay() override;
 
 private:
+	/** Starts the wave specified. */
+	UFUNCTION()
 	void StartWave(int WaveNumber);
+
+	/** Calculates the number of enemies that should be spawned at the start of a wave. */
+	int GetTotalNumberOfEnemiesInWave(int WaveNumber);
+
+	/** Increments CurrentWaveNumber and starts the wave start cooldown timer to start the next wave. */
+	void StartNextWave();
 
 private:
 	int CurrentWaveNumber;
+	int CurrentNumberOfEnemies;
+	float WaveStartCooldownDuration;
+
+	FTimerDelegate WaveStartCooldownTimerDelegate;
+	FTimerHandle WaveStartCooldownTimerHandle;
 
 private:
 	/** The spawn volume instance used to spawn enemies in. */

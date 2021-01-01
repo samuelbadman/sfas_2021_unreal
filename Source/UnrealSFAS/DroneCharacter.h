@@ -15,4 +15,9 @@ public:
 	// Sets default values for this character's properties
 	ADroneCharacter();
 
+	/** Damages the drone character, reducing its hitpoints value. Returns whether the damage destroyed the drone character. */
+	bool RecieveDamage(float Amount);
+
+private:
+	float hitpoints;
 };
