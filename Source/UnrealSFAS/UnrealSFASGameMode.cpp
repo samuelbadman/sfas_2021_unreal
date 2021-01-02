@@ -6,6 +6,9 @@
 #include "SpawnVolume.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "UnrealSFASPlayerController.h"
+#include "GameUI.h"
 
 AUnrealSFASGameMode::AUnrealSFASGameMode()
 {
@@ -100,6 +103,11 @@ void AUnrealSFASGameMode::StartWave(int WaveNumber)
 				// Spawn the enemy at the found location.
 				world->SpawnActor<ACharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator);
 			}
+
+			// Update UI wave label.
+			auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+			auto* GameUI = unrealSFASPlayerController->GetGameUI();
+			GameUI->SetWaveNumber(WaveNumber);
 
 			// Call the wave started event.
 			OnWaveStart();
