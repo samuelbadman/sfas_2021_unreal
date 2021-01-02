@@ -92,16 +92,23 @@ void AUnrealSFASGameMode::StartWave(int WaveNumber)
 			// Get enemy spawn volume.
 			auto* enemySpawnVolumeBox = EnemySpawnVolume->GetVolume();
 
-			CurrentNumberOfEnemies = GetTotalNumberOfEnemiesInWave(WaveNumber);
+			int numberToSpawn = GetTotalNumberOfEnemiesInWave(WaveNumber);
+			CurrentNumberOfEnemies = 0;
 
 			// For each enemy in the wave.
-			for (int i = 0; i < CurrentNumberOfEnemies; i++)
+			for (int i = 0; i < numberToSpawn; i++)
 			{
 				// Find a random location in the enemy spawn volume to spawn an enemy.
 				FVector randomLoc = UKismetMathLibrary::RandomPointInBoundingBox(enemySpawnVolumeBox->GetComponentLocation(), enemySpawnVolumeBox->GetUnscaledBoxExtent());
 
 				// Spawn the enemy at the found location.
-				world->SpawnActor<ACharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator);
+				auto* spawnedEnemy = world->SpawnActor<ACharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator);
+
+				// Check the enemy was spawned succesfully.
+				if (spawnedEnemy)
+				{
+					CurrentNumberOfEnemies++;
+				}
 			}
 
 			// Update UI wave label.
