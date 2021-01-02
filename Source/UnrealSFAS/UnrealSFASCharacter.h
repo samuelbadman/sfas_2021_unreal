@@ -117,6 +117,9 @@ private:
 	void ShowHitMarker();
 	void HideHitMarker();
 
+	/** Triggers game over state. */
+	void OnPlayerDefeated();
+
 private:
 	float TargetBoomLength;
 	float DefaultBoomLength;
@@ -175,5 +178,13 @@ private:
 	/** UI category */
 	UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
 	float HitMarkerDisplayDuration;
+	///////////////////////////////////////////////////
+	/** Defeated category */
+	UPROPERTY(EditDefaultsOnly, Category = Defeated, meta = (AllowPrivateAccess = "true"))
+	FVector DefeatedTargetCameraOffset;
+
+	UPROPERTY(EditDefaultsOnly, Category = Defeated, meta = (AllowPrivateAccess = "true"))
+	float DefeatedTargetCameraBoomLength;
+	///////////////////////////////////////////////////
 };
 

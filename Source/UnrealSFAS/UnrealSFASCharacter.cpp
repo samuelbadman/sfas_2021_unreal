@@ -95,6 +95,8 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	AimingOverRightShoulder = true;
 	HitMarkerDisplayDuration = 0.15f;
 	Hitpoints = 100;
+	DefeatedTargetCameraOffset = FVector(0.f, 0.f, 100.f);
+	DefeatedTargetCameraBoomLength = 300.f;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -129,6 +131,11 @@ void AUnrealSFASCharacter::Tick(float DeltaTime)
 	UpdateCameraZoom(DeltaTime);
 	UpdateCameraLocationOffset(DeltaTime);
 	UpdateViewPitch(DeltaTime);
+
+	if (Hitpoints <= 0)
+	{
+		FollowCamera->SetWorldRotation(UKismetMathLibrary::FindLookAtRotation(FollowCamera->GetComponentLocation(), GetCapsuleComponent()->GetComponentLocation()));
+	}
 }
 
 float AUnrealSFASCharacter::GetPitchOffset() const
@@ -237,6 +244,30 @@ void AUnrealSFASCharacter::HideHitMarker()
 	UnrealSFASPlayerController->GetGameUI()->SetHitMarkerVisibility(false);
 }
 
+void AUnrealSFASCharacter::OnPlayerDefeated()
+{
+	// Ragdoll skeleton.
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+
+	// Set target camera offsets to be above and away from the player.
+	TargetCameraOffset = DefeatedTargetCameraOffset;
+	TargetBoomLength = DefeatedTargetCameraBoomLength;
+
+	// Check the world is valid.
+	auto* world = GetWorld();
+	if (world)
+	{
+		// Check player controller is valid.
+		auto* playerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+		if (playerController)
+		{
+			// Set input mode to UI input only.
+			playerController->SetInputMode(FInputModeUIOnly());
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -273,7 +304,16 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 void AUnrealSFASCharacter::RecieveDamage(int Amount)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, FString::Printf(TEXT("Player took damage: %d"), Amount));
+	// Negative damage will heal the player.
 
+	// Apply damage.
+	Hitpoints -= Amount;
+
+	// Check if the player has been defeated.
+	if (Hitpoints <= 0)
+	{
+		OnPlayerDefeated();
+	}
 }
 
 void AUnrealSFASCharacter::OnResetVR()
