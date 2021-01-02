@@ -34,6 +34,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
+	/** Damages the player character's hitpoints. */
+	UFUNCTION(BlueprintCallable, Category = Damage)
+	void RecieveDamage(int Amount);
+
 protected:
 
 	/** Resets HMD orientation in VR. */
@@ -131,6 +135,8 @@ private:
 	FVector DefaultCameraRelativeLocation;
 
 	FTimerHandle HitMarkerTimerHandle;
+
+	int Hitpoints; 
 
 	///////////////////////////////////////////////////
 	/** Weapon category */

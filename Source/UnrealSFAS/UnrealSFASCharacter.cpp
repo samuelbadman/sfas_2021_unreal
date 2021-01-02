@@ -75,6 +75,9 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	// Add "Player" tag to actor
 	Tags.Add(FName("Player"));
 
+	// Set collision response to visibility channel to block.
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+
 	// Set default member values
 	CameraZoomSpeed = 4.f;
 	CameraMoveSpeed = 4.f;
@@ -91,6 +94,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	Aiming = false;
 	AimingOverRightShoulder = true;
 	HitMarkerDisplayDuration = 0.15f;
+	Hitpoints = 100;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -264,6 +268,12 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AUnrealSFASCharacter::OnResetVR);
+}
+
+void AUnrealSFASCharacter::RecieveDamage(int Amount)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, FString::Printf(TEXT("Player took damage: %d"), Amount));
+
 }
 
 void AUnrealSFASCharacter::OnResetVR()

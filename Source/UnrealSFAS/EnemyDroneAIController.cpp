@@ -25,6 +25,9 @@ AEnemyDroneAIController::AEnemyDroneAIController()
 
 	// Set default member values
 	BehaviorTreeAsset = nullptr;
+	MaxShotDistance = 1000.f;
+	MinShotDamage = 1;
+	MaxShotDamage = 5;
 }
 
 void AEnemyDroneAIController::BeginPlay()
