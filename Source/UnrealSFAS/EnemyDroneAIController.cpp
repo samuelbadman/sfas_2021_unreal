@@ -25,25 +25,28 @@ AEnemyDroneAIController::AEnemyDroneAIController()
 
 	// Set default member values
 	BehaviorTreeAsset = nullptr;
+	MaxShotDistance = 1000.f;
+	MinShotDamage = 1;
+	MaxShotDamage = 5;
 }
 
 void AEnemyDroneAIController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	auto* controlledPawn = GetPawn();
-	// Check controlled pawn is valid.
-	if (controlledPawn)
-	{
-		// Add enemy tag to controlled pawn actor.
-		GetPawn()->Tags.Add(FName("Enemy"));
-	}
-
 	// Check behaviour tree asset is valid.
 	if (BehaviorTreeAsset)
 	{
 		RunBehaviorTree(BehaviorTreeAsset);
 	}
+}
+
+void AEnemyDroneAIController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	// Add enemy tag to controlled pawn actor.
+	InPawn->Tags.Add(FName("Enemy"));
 }
 
 void AEnemyDroneAIController::OnPerceptionUpdate(AActor* Actor, FAIStimulus Stimulus)

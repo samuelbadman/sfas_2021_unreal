@@ -24,6 +24,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetHitMarkerVisibility(bool Visible);
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void SetWaveNumber(int wave);
+
 protected:
 	void NativeConstruct() override;
 

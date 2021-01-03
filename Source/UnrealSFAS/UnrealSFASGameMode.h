@@ -13,6 +13,63 @@ class AUnrealSFASGameMode : public AGameModeBase
 
 public:
 	AUnrealSFASGameMode();
+
+	/** Returns the current wave the game is on. */
+	FORCEINLINE int GetCurrentWaveNumber() const { return CurrentWaveNumber; }
+
+	/** Updates the round when a drone is destroyed. */
+	void NotifyDroneDestroyed();
+
+protected:
+	void BeginPlay() override;
+
+private:
+	/** Starts the wave specified. */
+	UFUNCTION()
+	void StartWave(int WaveNumber);
+
+	/** Calculates the number of enemies that should be spawned at the start of a wave. */
+	int GetTotalNumberOfEnemiesInWave(int WaveNumber);
+
+	/** Increments CurrentWaveNumber and starts the wave start cooldown timer to start the next wave. */
+	void StartNextWave();
+
+	/** Event called when a wave is completed. Used to handle events that trigger at the end of a wave: ui updates etc... */
+	void OnWaveComplete();
+
+	/** Event called when a wave starts. Used to handle events that trigger at the start of a wave: ui updates etc...*/
+	void OnWaveStart();
+
+private:
+	int CurrentWaveNumber;
+	int CurrentNumberOfEnemies;
+	float WaveStartCooldownDuration;
+
+	FTimerDelegate WaveStartCooldownTimerDelegate;
+	FTimerHandle WaveStartCooldownTimerHandle;
+
+private:
+	/** The spawn volume instance used to spawn enemies in. */
+	class ASpawnVolume* EnemySpawnVolume;
+
+	//////////////////////////////////
+	/** Enemies category */
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = Enemies, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ASpawnVolume> EnemySpawnVolumeClass;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = Enemies, meta = (AllowPrivateAccess = "true"))
+	FVector EnemySpawnVolumeCenterLocation;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = Enemies, meta = (AllowPrivateAccess = "true"))
+	FVector EnemySpawnVolumeExtent;
+
+	/** Set in the derived blueprint. The character class to spawn as enemies. */
+	UPROPERTY(EditDefaultsOnly, Category = Enemies, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ACharacter> EnemyCharacterClass;
+	//////////////////////////////////
 };
 
 

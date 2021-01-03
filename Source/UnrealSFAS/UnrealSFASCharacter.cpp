@@ -16,6 +16,7 @@
 #include "Perception/AIPerceptionSystem.h"
 #include "UnrealSFASPlayerController.h"
 #include "GameUI.h"
+#include "DroneCharacter.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealSFASCharacter
@@ -74,6 +75,9 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	// Add "Player" tag to actor
 	Tags.Add(FName("Player"));
 
+	// Set collision response to visibility channel to block.
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+
 	// Set default member values
 	CameraZoomSpeed = 4.f;
 	CameraMoveSpeed = 4.f;
@@ -90,6 +94,9 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	Aiming = false;
 	AimingOverRightShoulder = true;
 	HitMarkerDisplayDuration = 0.15f;
+	Hitpoints = 100;
+	DefeatedTargetCameraOffset = FVector(0.f, 0.f, 100.f);
+	DefeatedTargetCameraBoomLength = 300.f;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -124,6 +131,11 @@ void AUnrealSFASCharacter::Tick(float DeltaTime)
 	UpdateCameraZoom(DeltaTime);
 	UpdateCameraLocationOffset(DeltaTime);
 	UpdateViewPitch(DeltaTime);
+
+	if (Hitpoints <= 0)
+	{
+		FollowCamera->SetWorldRotation(UKismetMathLibrary::FindLookAtRotation(FollowCamera->GetComponentLocation(), GetCapsuleComponent()->GetComponentLocation()));
+	}
 }
 
 float AUnrealSFASCharacter::GetPitchOffset() const
@@ -232,6 +244,33 @@ void AUnrealSFASCharacter::HideHitMarker()
 	UnrealSFASPlayerController->GetGameUI()->SetHitMarkerVisibility(false);
 }
 
+void AUnrealSFASCharacter::OnPlayerDefeated()
+{
+	// Ragdoll skeleton.
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+
+	// Set target camera offsets to be above and away from the player.
+	TargetCameraOffset = DefeatedTargetCameraOffset;
+	TargetBoomLength = DefeatedTargetCameraBoomLength;
+
+	// Stop the character moving.
+	GetCharacterMovement()->MaxWalkSpeed = 0.f;
+
+	// Check the world is valid.
+	auto* world = GetWorld();
+	if (world)
+	{
+		// Check player controller is valid.
+		auto* playerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+		if (playerController)
+		{
+			// Set input mode to UI input only.
+			playerController->SetInputMode(FInputModeUIOnly());
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -263,6 +302,21 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AUnrealSFASCharacter::OnResetVR);
+}
+
+void AUnrealSFASCharacter::RecieveDamage(int Amount)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, FString::Printf(TEXT("Player took damage: %d"), Amount));
+	// Negative damage will heal the player.
+
+	// Apply damage.
+	Hitpoints -= Amount;
+
+	// Check if the player has been defeated.
+	if (Hitpoints <= 0)
+	{
+		OnPlayerDefeated();
+	}
 }
 
 void AUnrealSFASCharacter::OnResetVR()
@@ -316,51 +370,60 @@ void AUnrealSFASCharacter::StopAimingWeapon()
 
 void AUnrealSFASCharacter::FireWeapon()
 {
-	// Is the player aiming?
-	if (Aiming)
+	// Is the player aiming and the weapon reference is valid?
+	if (Aiming && (Weapon != nullptr))
 	{
-		// Is the weapon reference valid?
-		if (Weapon)
+		// Is the world valid?
+		auto* world = GetWorld();
+		if (world)
 		{
-			// Is the world valid?
-			auto* world = GetWorld();
-			if (world)
+			// Has enough game time elapsed since the last shot?
+			const float currentGameSeconds = UKismetSystemLibrary::GetGameTimeInSeconds(world);
+			if ((currentGameSeconds - GameSecondsAtLastShot) > Weapon->GetShotRecoverTime())
 			{
-				// Has enough game time elapsed since the last shot?
-				const float currentGameSeconds = UKismetSystemLibrary::GetGameTimeInSeconds(world);
-				if ((currentGameSeconds - GameSecondsAtLastShot) > Weapon->GetShotRecoverTime())
+				// Is the camera manager reference vallid?
+				if (CameraManager)
 				{
-					// Is the camera manager reference vallid?
-					if (CameraManager)
+					GameSecondsAtLastShot = currentGameSeconds;
+
+					auto cameraLoc = CameraManager->GetCameraLocation();
+					auto cameraForward = CameraManager->GetActorForwardVector();
+
+					// Play the weapon shot animation monatage.
+					PlayAnimMontage(Weapon->GetShotAnimMontage());
+
+					FHitResult hit;
+					TArray<AActor*> ignoredActors;
+					// Trace in the ECC_Visibility channel for any actor except for self.
+					if (UKismetSystemLibrary::LineTraceSingle(
+						world, 
+						cameraLoc,
+						cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), 
+						UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility), 
+						false,
+						ignoredActors, 
+						EDrawDebugTrace::ForDuration, 
+						hit,
+						true))
 					{
-						GameSecondsAtLastShot = currentGameSeconds;
-
-						auto cameraLoc = CameraManager->GetCameraLocation();
-						auto cameraForward = CameraManager->GetActorForwardVector();
-
-						PlayAnimMontage(Weapon->GetShotAnimMontage());
-
-						FHitResult hit;
-						TArray<AActor*> ignoredActors;
-						// Trace in the ECC_Visibility channel for any actor except for self.
-						if (UKismetSystemLibrary::LineTraceSingle(
-							world, 
-							cameraLoc,
-							cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), 
-							UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility), 
-							false,
-							ignoredActors, 
-							EDrawDebugTrace::ForDuration, 
-							hit,
-							true))
+						// Check if the hit actor has the "Enemy" tag.
+						if (hit.Actor->ActorHasTag(FName("Enemy")))
 						{
-							if (hit.Actor->ActorHasTag(FName("Enemy")))
-							{
-								UE_LOG(LogTemp, Warning, TEXT("Hit enemy"));
+							UE_LOG(LogTemp, Warning, TEXT("Hit enemy"));
 
-								ShowHitMarker();
-								GetWorldTimerManager().ClearTimer(HitMarkerTimerHandle);
-								GetWorldTimerManager().SetTimer(HitMarkerTimerHandle, this, &AUnrealSFASCharacter::HideHitMarker, HitMarkerDisplayDuration, false);
+							// Show the hit marker. Start a timer to hide the hitmarker.
+							ShowHitMarker();
+							GetWorldTimerManager().ClearTimer(HitMarkerTimerHandle);
+							GetWorldTimerManager().SetTimer(HitMarkerTimerHandle, this, &AUnrealSFASCharacter::HideHitMarker, HitMarkerDisplayDuration, false);
+
+							// Cast the hit actor to ADroneCharacter.
+							auto* enemy = Cast<ADroneCharacter>(hit.Actor);
+
+							// Check the cast was successful.
+							if (enemy)
+							{
+								// Damage the enemy.
+								enemy->RecieveDamage(FMath::FRandRange(Weapon->GetMinDamage(), Weapon->GetMaxDamage()));
 							}
 						}
 					}

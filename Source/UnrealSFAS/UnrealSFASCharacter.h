@@ -34,6 +34,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
+	/** Damages the player character's hitpoints. */
+	UFUNCTION(BlueprintCallable, Category = Damage)
+	void RecieveDamage(int Amount);
+
 protected:
 
 	/** Resets HMD orientation in VR. */
@@ -113,6 +117,9 @@ private:
 	void ShowHitMarker();
 	void HideHitMarker();
 
+	/** Triggers game over state. */
+	void OnPlayerDefeated();
+
 private:
 	float TargetBoomLength;
 	float DefaultBoomLength;
@@ -131,6 +138,8 @@ private:
 	FVector DefaultCameraRelativeLocation;
 
 	FTimerHandle HitMarkerTimerHandle;
+
+	int Hitpoints; 
 
 	///////////////////////////////////////////////////
 	/** Weapon category */
@@ -169,5 +178,13 @@ private:
 	/** UI category */
 	UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
 	float HitMarkerDisplayDuration;
+	///////////////////////////////////////////////////
+	/** Defeated category */
+	UPROPERTY(EditDefaultsOnly, Category = Defeated, meta = (AllowPrivateAccess = "true"))
+	FVector DefeatedTargetCameraOffset;
+
+	UPROPERTY(EditDefaultsOnly, Category = Defeated, meta = (AllowPrivateAccess = "true"))
+	float DefeatedTargetCameraBoomLength;
+	///////////////////////////////////////////////////
 };
 

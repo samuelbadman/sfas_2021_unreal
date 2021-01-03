@@ -22,8 +22,18 @@ class UNREALSFAS_API AEnemyDroneAIController : public AAIController
 public:
 	AEnemyDroneAIController();
 
+	UFUNCTION(BlueprintCallable, Category = AI)
+	FORCEINLINE float GetMaxShotDistance() const { return MaxShotDistance; }
+	
+	UFUNCTION(BlueprintCallable, Category = AI)
+	FORCEINLINE int GetMinShotDamage() const { return MinShotDamage; }
+
+	UFUNCTION(BlueprintCallable, Category = AI)
+	FORCEINLINE int GetMaxShotDamage() const { return MaxShotDamage; }
+
 protected:
 	void BeginPlay() override;
+	void OnPossess(APawn* InPawn) override;
 
 private:
 	/** Bound as delegate to OnTargetPerceptionUpdate */
@@ -43,5 +53,17 @@ private:
 	/** Set in the derived blueprint */
 	UPROPERTY(EditDefaultsOnly, Category = "Drone AI", meta = (AllowPrivateAccess = "true"))
 	FName CanSeePlayerBlackboardValueName;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = "Drone AI", meta = (AllowPrivateAccess = "true"))
+	float MaxShotDistance;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = "Drone AI", meta = (AllowPrivateAccess = "true"))
+	int MinShotDamage;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = "Drone AI", meta = (AllowPrivateAccess = "true"))
+	int MaxShotDamage;
 	///////////////////////////////////////////////
 };

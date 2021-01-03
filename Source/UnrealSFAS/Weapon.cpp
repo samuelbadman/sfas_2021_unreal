@@ -17,6 +17,8 @@ AWeapon::AWeapon()
 	ShotAnimMontage = nullptr;
 	ShotRecoverTime = 0.15f;
 	ShotMaxRange = 1000.0f;
+	MinDamage = 1;
+	MaxDamage = 5;
 }
 
 
