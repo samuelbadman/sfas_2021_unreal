@@ -6,6 +6,7 @@
 #include "GameUI.h"
 #include "Kismet/GameplayStatics.h"
 #include "UnrealSFASGameMode.h"
+#include "GameOver/GameOverUserWidget.h"
 
 AUnrealSFASPlayerController::AUnrealSFASPlayerController()
 {
@@ -18,6 +19,9 @@ AUnrealSFASPlayerController::AUnrealSFASPlayerController()
 
 	// Set member default values
 	GameUI = nullptr;
+	GameOverUI = nullptr;
+	GameUIClass = nullptr;
+	GameOverWidgetClass = nullptr;
 }
 
 void AUnrealSFASPlayerController::BeginPlay()
@@ -42,6 +46,22 @@ void AUnrealSFASPlayerController::BeginPlay()
 			// Setup initial ui state
 			auto* gameMode = CastChecked<AUnrealSFASGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
 			GameUI->SetWaveNumber(gameMode->GetCurrentWaveNumber());
+		}
+	}
+}
+
+void AUnrealSFASPlayerController::SpawnGameOverUI()
+{
+	// Spawn game over user interface
+	// Check the game over ui class is valid
+	if (GameOverWidgetClass)
+	{
+		GameOverUI = CreateWidget<UGameOverUserWidget>(this, GameOverWidgetClass);
+
+		// Check game over UI created correctly.
+		if (GameOverUI)
+		{
+			GameOverUI->AddToViewport();
 		}
 	}
 }

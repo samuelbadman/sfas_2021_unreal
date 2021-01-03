@@ -21,13 +21,20 @@ public:
 
 	FORCEINLINE class UGameUI* GetGameUI() const { return GameUI; }
 
+	void SpawnGameOverUI();
+
 private:
 	class UGameUI* GameUI;
+	class UGameOverUserWidget* GameOverUI;
 
 	///////////////////////////////////////////////////
 	/** Game user interface category */
 	/** Set in the derived blueprint */
 	UPROPERTY(EditDefaultsOnly, Category = "Game user interface")
 	TSubclassOf<class UGameUI> GameUIClass;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = "Game user interface")
+	TSubclassOf<class UGameOverUserWidget> GameOverWidgetClass;
 	///////////////////////////////////////////////////
 };

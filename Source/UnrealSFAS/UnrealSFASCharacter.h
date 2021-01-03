@@ -140,6 +140,7 @@ private:
 	FTimerHandle HitMarkerTimerHandle;
 
 	int Hitpoints; 
+	bool Defeated;
 
 	///////////////////////////////////////////////////
 	/** Weapon category */

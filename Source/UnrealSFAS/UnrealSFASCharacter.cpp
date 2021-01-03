@@ -97,6 +97,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	Hitpoints = 100;
 	DefeatedTargetCameraOffset = FVector(0.f, 0.f, 100.f);
 	DefeatedTargetCameraBoomLength = 300.f;
+	Defeated = false;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -246,27 +247,50 @@ void AUnrealSFASCharacter::HideHitMarker()
 
 void AUnrealSFASCharacter::OnPlayerDefeated()
 {
-	// Ragdoll skeleton.
-	GetMesh()->SetSimulatePhysics(true);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-
-	// Set target camera offsets to be above and away from the player.
-	TargetCameraOffset = DefeatedTargetCameraOffset;
-	TargetBoomLength = DefeatedTargetCameraBoomLength;
-
-	// Stop the character moving.
-	GetCharacterMovement()->MaxWalkSpeed = 0.f;
-
-	// Check the world is valid.
-	auto* world = GetWorld();
-	if (world)
+	// Check if the player has already been defeated
+	if (!Defeated)
 	{
-		// Check player controller is valid.
-		auto* playerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-		if (playerController)
+		// Set defeated flag.
+		Defeated = true;
+
+		// Ragdoll skeleton.
+		GetMesh()->SetSimulatePhysics(true);
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+
+		// Set target camera offsets to be above and away from the player.
+		TargetCameraOffset = DefeatedTargetCameraOffset;
+		TargetBoomLength = DefeatedTargetCameraBoomLength;
+
+		// Stop the character moving.
+		GetCharacterMovement()->MaxWalkSpeed = 0.f;
+
+		// Check the world is valid.
+		auto* world = GetWorld();
+		if (world)
 		{
-			// Set input mode to UI input only.
-			playerController->SetInputMode(FInputModeUIOnly());
+			// Check player controller is valid.
+			auto* playerController = UGameplayStatics::GetPlayerController(world, 0);
+			if (playerController)
+			{
+				// Cast to the player controller.
+				auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
+
+				// Set input mode to UI input only.
+				playerController->SetInputMode(FInputModeUIOnly());
+
+				// Show the mouse cursor.
+				playerController->bShowMouseCursor = true;
+
+				// Check the player controller cast correctly.
+				if (unrealSFASPlayerController)
+				{
+					// Hide the game UI.
+					unrealSFASPlayerController->GetGameUI()->Show(false);
+
+					// Show the game over UI.
+					unrealSFASPlayerController->SpawnGameOverUI();
+				}
+			}
 		}
 	}
 }
