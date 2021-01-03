@@ -254,6 +254,9 @@ void AUnrealSFASCharacter::OnPlayerDefeated()
 	TargetCameraOffset = DefeatedTargetCameraOffset;
 	TargetBoomLength = DefeatedTargetCameraBoomLength;
 
+	// Stop the character moving.
+	GetCharacterMovement()->MaxWalkSpeed = 0.f;
+
 	// Check the world is valid.
 	auto* world = GetWorld();
 	if (world)
