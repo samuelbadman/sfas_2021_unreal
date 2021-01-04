@@ -17,6 +17,7 @@
 #include "UnrealSFASPlayerController.h"
 #include "GameUI.h"
 #include "DroneCharacter.h"
+#include "Pause/PauseUserWidget.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealSFASCharacter
@@ -233,6 +234,12 @@ void AUnrealSFASCharacter::SwapAimingShoulder()
 	}
 }
 
+void AUnrealSFASCharacter::PausePressed()
+{
+	auto* UnrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
+	UnrealSFASPlayerController->TogglePause();
+}
+
 void AUnrealSFASCharacter::ShowHitMarker()
 {
 	auto* UnrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
@@ -308,6 +315,10 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AUnrealSFASCharacter::StopAimingWeapon);
 	PlayerInputComponent->BindAction("FireWeapon", IE_Pressed, this, &AUnrealSFASCharacter::FireWeapon);
 	PlayerInputComponent->BindAction("SwapShoulder", IE_Pressed, this, &AUnrealSFASCharacter::SwapShoulder);
+
+	// Bind the pause action method. Allow execution when the game is paused.
+	FInputActionBinding& pauseBinding = PlayerInputComponent->BindAction("Pause", IE_Pressed, this, &AUnrealSFASCharacter::PausePressed);
+	pauseBinding.bExecuteWhenPaused = true;
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AUnrealSFASCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AUnrealSFASCharacter::MoveRight);

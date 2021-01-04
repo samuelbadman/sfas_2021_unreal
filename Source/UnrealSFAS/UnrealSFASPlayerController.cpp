@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UnrealSFASGameMode.h"
 #include "GameOver/GameOverUserWidget.h"
+#include "Pause/PauseUserWidget.h"
 
 AUnrealSFASPlayerController::AUnrealSFASPlayerController()
 {
@@ -22,6 +23,9 @@ AUnrealSFASPlayerController::AUnrealSFASPlayerController()
 	GameOverUI = nullptr;
 	GameUIClass = nullptr;
 	GameOverWidgetClass = nullptr;
+	PauseUI = nullptr;
+	PauseUserWidgetClass = nullptr;
+	Paused = false;
 }
 
 void AUnrealSFASPlayerController::BeginPlay()
@@ -48,6 +52,22 @@ void AUnrealSFASPlayerController::BeginPlay()
 			GameUI->SetWaveNumber(gameMode->GetCurrentWaveNumber());
 		}
 	}
+
+	// Check the pause ui class is valid.
+	if (PauseUserWidgetClass)
+	{
+		PauseUI = CreateWidget<UPauseUserWidget>(this, PauseUserWidgetClass);
+
+		// Check the pause ui widget created correctly
+		if (PauseUI)
+		{
+			// Add the UI.
+			PauseUI->AddToViewport();
+
+			// Hide the pause menu.
+			PauseUI->Show(false);
+		}
+	}
 }
 
 void AUnrealSFASPlayerController::SpawnGameOverUI()
@@ -64,4 +84,45 @@ void AUnrealSFASPlayerController::SpawnGameOverUI()
 			GameOverUI->AddToViewport();
 		}
 	}
+}
+
+void AUnrealSFASPlayerController::PauseGame(bool Pause)
+{
+	Paused = Pause;
+
+	if (Pause)
+	{
+		// Hide the game UI
+		//GameUI->Show(false);
+
+		// Show the pause menu
+		PauseUI->Show(true);
+
+		// Pause the game
+		SetPause(true);
+
+		// Set input mode to game and ui.
+		SetInputMode(FInputModeGameAndUI());
+		bShowMouseCursor = true;
+	}
+	else
+	{
+		// Show the game UI
+		//GameUI->Show(true);
+
+		// Show the pause menu
+		PauseUI->Show(false);
+
+		// Resume the game
+		SetPause(false);
+
+		// Set input mode to game only.
+		SetInputMode(FInputModeGameOnly());
+		bShowMouseCursor = false;
+	}
+}
+
+void AUnrealSFASPlayerController::TogglePause()
+{
+	PauseGame(!Paused);
 }

@@ -114,6 +114,8 @@ private:
 
 	void SwapAimingShoulder();
 
+	void PausePressed();
+
 	void ShowHitMarker();
 	void HideHitMarker();
 
