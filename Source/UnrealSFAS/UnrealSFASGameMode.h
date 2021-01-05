@@ -40,6 +40,9 @@ private:
 	/** Event called when a wave starts. Used to handle events that trigger at the start of a wave: ui updates etc...*/
 	void OnWaveStart();
 
+	/** Called when a wave status notification has expired. Hides the appropriate UI widget. */
+	void OnNotificationExpired();
+
 private:
 	int CurrentWaveNumber;
 	int CurrentNumberOfEnemies;
@@ -47,6 +50,9 @@ private:
 
 	FTimerDelegate WaveStartCooldownTimerDelegate;
 	FTimerHandle WaveStartCooldownTimerHandle;
+
+	float WaveNotificationDisplayDuration;
+	FTimerHandle WaveNotificationTimerHandle;
 
 private:
 	/** The spawn volume instance used to spawn enemies in. */

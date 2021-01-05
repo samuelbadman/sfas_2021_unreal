@@ -30,6 +30,7 @@ AUnrealSFASGameMode::AUnrealSFASGameMode()
 	CurrentWaveNumber = 0;
 	CurrentNumberOfEnemies = 0;
 	WaveStartCooldownDuration = 5.f;
+	WaveNotificationDisplayDuration = 2.f;
 
 	EnemySpawnVolume = nullptr;
 	EnemySpawnVolumeClass = nullptr;
@@ -139,10 +140,42 @@ void AUnrealSFASGameMode::StartNextWave()
 
 void AUnrealSFASGameMode::OnWaveComplete()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Cyan, FString::Printf(TEXT("Wave %d complete."), CurrentWaveNumber));
+	// Check the world is valid.
+	auto* world = GetWorld();
+	if (world)
+	{
+		// Notify the wave has started.
+		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+		unrealSFASPlayerController->GetGameUI()->ShowWaveStatusNotification(CurrentWaveNumber, true);
+
+		// Begin timer to hide notification.
+		GetWorldTimerManager().SetTimer(WaveNotificationTimerHandle, this, &AUnrealSFASGameMode::OnNotificationExpired, WaveNotificationDisplayDuration, false);
+	}
 }
 
 void AUnrealSFASGameMode::OnWaveStart()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Cyan, FString::Printf(TEXT("Wave %d started."), CurrentWaveNumber));
+	// Check the world is valid.
+	auto* world = GetWorld();
+	if (world)
+	{
+		// Notify the wave has been completed.
+		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+		unrealSFASPlayerController->GetGameUI()->ShowWaveStatusNotification(CurrentWaveNumber, false);
+
+		// Begin timer to hide notification.
+		GetWorldTimerManager().SetTimer(WaveNotificationTimerHandle, this, &AUnrealSFASGameMode::OnNotificationExpired, WaveNotificationDisplayDuration, false);
+	}
+}
+
+void AUnrealSFASGameMode::OnNotificationExpired()
+{
+	// Check the world is valid.
+	auto* world = GetWorld();
+	if (world)
+	{
+		// Hide the notifcation widget.
+		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+		unrealSFASPlayerController->GetGameUI()->HideWaveStatusNotification();
+	}
 }

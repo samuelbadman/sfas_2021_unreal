@@ -8,6 +8,7 @@
 #include "UnrealSFASGameMode.h"
 #include "GameOver/GameOverUserWidget.h"
 #include "Pause/PauseUserWidget.h"
+#include  "UnrealSFASCharacter.h"
 
 AUnrealSFASPlayerController::AUnrealSFASPlayerController()
 {
@@ -50,6 +51,9 @@ void AUnrealSFASPlayerController::BeginPlay()
 			// Setup initial ui state
 			auto* gameMode = CastChecked<AUnrealSFASGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
 			GameUI->SetWaveNumber(gameMode->GetCurrentWaveNumber());
+
+			auto* unrealSFASCharacter = CastChecked<AUnrealSFASCharacter>(GetPawn());
+			GameUI->SetHitpointsValue(unrealSFASCharacter->GetHitpoints());
 		}
 	}
 

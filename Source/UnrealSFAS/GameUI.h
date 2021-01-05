@@ -30,6 +30,15 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
 	void Show(bool Show);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
+	void ShowWaveStatusNotification(int CurrentWaveNumber, bool WaveComplete);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
+	void HideWaveStatusNotification();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
+	void SetHitpointsValue(int Hitpoints);
+
 protected:
 	void NativeConstruct() override;
 

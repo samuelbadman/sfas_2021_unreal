@@ -136,6 +136,7 @@ void AUnrealSFASCharacter::Tick(float DeltaTime)
 	UpdateCameraLocationOffset(DeltaTime);
 	UpdateViewPitch(DeltaTime);
 
+	// Force follow camera to look at the capsule component.
 	if (Hitpoints <= 0)
 	{
 		FollowCamera->SetWorldRotation(UKismetMathLibrary::FindLookAtRotation(FollowCamera->GetComponentLocation(), GetCapsuleComponent()->GetComponentLocation()));
@@ -304,6 +305,18 @@ void AUnrealSFASCharacter::OnPlayerDefeated()
 	}
 }
 
+void AUnrealSFASCharacter::UpdateHitpointsUI()
+{
+	// Check the world is valid.
+	auto* world = GetWorld();
+	if (world)
+	{
+		// Set the new HP value.
+		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+		unrealSFASPlayerController->GetGameUI()->SetHitpointsValue(Hitpoints);
+	}
+}
+
 void AUnrealSFASCharacter::RecieveDamage(int Amount)
 {
 	// Negative damage will heal the player.
@@ -316,6 +329,9 @@ void AUnrealSFASCharacter::RecieveDamage(int Amount)
 	{
 		OnPlayerDefeated();
 	}
+
+	// Update the UI.
+	UpdateHitpointsUI();
 }
 
 //////////////////////////////////////////////////////////////////////////
