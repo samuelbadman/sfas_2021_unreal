@@ -26,10 +26,8 @@ ADroneCharacter::ADroneCharacter()
 	// The enemy drone AI controller will add the "Enemy" tag when this character is possessed by it.
 }
 
-bool ADroneCharacter::RecieveDamage_Implementation(int Amount)
+bool ADroneCharacter::RecieveDamage(int Amount)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Green, FString::Printf(TEXT("Hit Drone.")));
-
 	// Recieving negative damage can heal the drone.
 	//if (Amount <= 0.f) return false;
 

@@ -38,6 +38,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Damage)
 	void RecieveDamage(int Amount);
 
+	FORCEINLINE int GetHitpoints() const { return Hitpoints; }
+
 protected:
 
 	/** Resets HMD orientation in VR. */
@@ -114,11 +116,16 @@ private:
 
 	void SwapAimingShoulder();
 
+	void PausePressed();
+
 	void ShowHitMarker();
 	void HideHitMarker();
 
 	/** Triggers game over state. */
 	void OnPlayerDefeated();
+
+	/** Updates the player's hitpoint value in the UI display. */
+	void UpdateHitpointsUI();
 
 private:
 	float TargetBoomLength;
@@ -140,6 +147,10 @@ private:
 	FTimerHandle HitMarkerTimerHandle;
 
 	int Hitpoints; 
+	bool Defeated;
+
+	int NumberOfEnemiesDefeated;
+	int DamageDealt;
 
 	///////////////////////////////////////////////////
 	/** Weapon category */

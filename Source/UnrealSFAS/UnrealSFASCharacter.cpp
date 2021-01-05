@@ -17,6 +17,7 @@
 #include "UnrealSFASPlayerController.h"
 #include "GameUI.h"
 #include "DroneCharacter.h"
+#include "Pause/PauseUserWidget.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealSFASCharacter
@@ -97,6 +98,9 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	Hitpoints = 100;
 	DefeatedTargetCameraOffset = FVector(0.f, 0.f, 100.f);
 	DefeatedTargetCameraBoomLength = 300.f;
+	Defeated = false;
+	NumberOfEnemiesDefeated = 0;
+	DamageDealt = 0;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -132,6 +136,7 @@ void AUnrealSFASCharacter::Tick(float DeltaTime)
 	UpdateCameraLocationOffset(DeltaTime);
 	UpdateViewPitch(DeltaTime);
 
+	// Force follow camera to look at the capsule component.
 	if (Hitpoints <= 0)
 	{
 		FollowCamera->SetWorldRotation(UKismetMathLibrary::FindLookAtRotation(FollowCamera->GetComponentLocation(), GetCapsuleComponent()->GetComponentLocation()));
@@ -232,6 +237,12 @@ void AUnrealSFASCharacter::SwapAimingShoulder()
 	}
 }
 
+void AUnrealSFASCharacter::PausePressed()
+{
+	auto* UnrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
+	UnrealSFASPlayerController->TogglePause();
+}
+
 void AUnrealSFASCharacter::ShowHitMarker()
 {
 	auto* UnrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
@@ -246,29 +257,81 @@ void AUnrealSFASCharacter::HideHitMarker()
 
 void AUnrealSFASCharacter::OnPlayerDefeated()
 {
-	// Ragdoll skeleton.
-	GetMesh()->SetSimulatePhysics(true);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	// Check if the player has already been defeated
+	if (!Defeated)
+	{
+		// Set defeated flag.
+		Defeated = true;
 
-	// Set target camera offsets to be above and away from the player.
-	TargetCameraOffset = DefeatedTargetCameraOffset;
-	TargetBoomLength = DefeatedTargetCameraBoomLength;
+		// Ragdoll skeleton.
+		GetMesh()->SetSimulatePhysics(true);
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 
-	// Stop the character moving.
-	GetCharacterMovement()->MaxWalkSpeed = 0.f;
+		// Set target camera offsets to be above and away from the player.
+		TargetCameraOffset = DefeatedTargetCameraOffset;
+		TargetBoomLength = DefeatedTargetCameraBoomLength;
 
+		// Stop the character moving.
+		GetCharacterMovement()->MaxWalkSpeed = 0.f;
+
+		// Check the world is valid.
+		auto* world = GetWorld();
+		if (world)
+		{
+			// Check player controller is valid.
+			auto* playerController = UGameplayStatics::GetPlayerController(world, 0);
+			if (playerController)
+			{
+				// Cast to the player controller.
+				auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
+
+				// Set input mode to UI input only.
+				playerController->SetInputMode(FInputModeUIOnly());
+
+				// Show the mouse cursor.
+				playerController->bShowMouseCursor = true;
+
+				// Check the player controller cast correctly.
+				if (unrealSFASPlayerController)
+				{
+					// Hide the game UI.
+					unrealSFASPlayerController->GetGameUI()->Show(false);
+
+					// Show the game over UI.
+					unrealSFASPlayerController->SpawnGameOverUI(NumberOfEnemiesDefeated, DamageDealt);
+				}
+			}
+		}
+	}
+}
+
+void AUnrealSFASCharacter::UpdateHitpointsUI()
+{
 	// Check the world is valid.
 	auto* world = GetWorld();
 	if (world)
 	{
-		// Check player controller is valid.
-		auto* playerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-		if (playerController)
-		{
-			// Set input mode to UI input only.
-			playerController->SetInputMode(FInputModeUIOnly());
-		}
+		// Set the new HP value.
+		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+		unrealSFASPlayerController->GetGameUI()->SetHitpointsValue(Hitpoints);
 	}
+}
+
+void AUnrealSFASCharacter::RecieveDamage(int Amount)
+{
+	// Negative damage will heal the player.
+
+	// Apply damage.
+	Hitpoints -= Amount;
+
+	// Check if the player has been defeated.
+	if (Hitpoints <= 0)
+	{
+		OnPlayerDefeated();
+	}
+
+	// Update the UI.
+	UpdateHitpointsUI();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -284,6 +347,10 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AUnrealSFASCharacter::StopAimingWeapon);
 	PlayerInputComponent->BindAction("FireWeapon", IE_Pressed, this, &AUnrealSFASCharacter::FireWeapon);
 	PlayerInputComponent->BindAction("SwapShoulder", IE_Pressed, this, &AUnrealSFASCharacter::SwapShoulder);
+
+	// Bind the pause action method. Allow execution when the game is paused.
+	FInputActionBinding& pauseBinding = PlayerInputComponent->BindAction("Pause", IE_Pressed, this, &AUnrealSFASCharacter::PausePressed);
+	pauseBinding.bExecuteWhenPaused = true;
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AUnrealSFASCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AUnrealSFASCharacter::MoveRight);
@@ -302,21 +369,6 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AUnrealSFASCharacter::OnResetVR);
-}
-
-void AUnrealSFASCharacter::RecieveDamage(int Amount)
-{
-	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, FString::Printf(TEXT("Player took damage: %d"), Amount));
-	// Negative damage will heal the player.
-
-	// Apply damage.
-	Hitpoints -= Amount;
-
-	// Check if the player has been defeated.
-	if (Hitpoints <= 0)
-	{
-		OnPlayerDefeated();
-	}
 }
 
 void AUnrealSFASCharacter::OnResetVR()
@@ -402,15 +454,13 @@ void AUnrealSFASCharacter::FireWeapon()
 						UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility), 
 						false,
 						ignoredActors, 
-						EDrawDebugTrace::ForDuration, 
+						EDrawDebugTrace::None, 
 						hit,
 						true))
 					{
 						// Check if the hit actor has the "Enemy" tag.
 						if (hit.Actor->ActorHasTag(FName("Enemy")))
 						{
-							UE_LOG(LogTemp, Warning, TEXT("Hit enemy"));
-
 							// Show the hit marker. Start a timer to hide the hitmarker.
 							ShowHitMarker();
 							GetWorldTimerManager().ClearTimer(HitMarkerTimerHandle);
@@ -423,7 +473,12 @@ void AUnrealSFASCharacter::FireWeapon()
 							if (enemy)
 							{
 								// Damage the enemy.
-								enemy->RecieveDamage(FMath::FRandRange(Weapon->GetMinDamage(), Weapon->GetMaxDamage()));
+								int32 damage = FMath::RandRange(Weapon->GetMinDamage(), Weapon->GetMaxDamage());
+								if (enemy->RecieveDamage(damage))
+								{
+									NumberOfEnemiesDefeated++;
+								}
+								DamageDealt += damage;
 							}
 						}
 					}

@@ -15,17 +15,29 @@ class UNREALSFAS_API UGameUI : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
 	void SetDotMaterial(UMaterialInstanceDynamic* Material);
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
 	void SetReticleVisibility(bool Visible);
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
 	void SetHitMarkerVisibility(bool Visible);
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
 	void SetWaveNumber(int wave);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
+	void Show(bool Show);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
+	void ShowWaveStatusNotification(int CurrentWaveNumber, bool WaveComplete);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
+	void HideWaveStatusNotification();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
+	void SetHitpointsValue(int Hitpoints);
 
 protected:
 	void NativeConstruct() override;
