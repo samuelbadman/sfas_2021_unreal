@@ -144,6 +144,9 @@ private:
 	int Hitpoints; 
 	bool Defeated;
 
+	int NumberOfEnemiesDefeated;
+	int DamageDealt;
+
 	///////////////////////////////////////////////////
 	/** Weapon category */
 	/** Set in the derived blueprint */

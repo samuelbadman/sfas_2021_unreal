@@ -19,7 +19,7 @@ public:
 
 	void BeginPlay() override;
 
-	void SpawnGameOverUI();
+	void SpawnGameOverUI(int EnemiesDefeated, int TotalDamageDealt);
 
 	void PauseGame(bool Pause);
 	void TogglePause();

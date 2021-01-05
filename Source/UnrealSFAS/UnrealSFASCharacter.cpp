@@ -99,6 +99,8 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	DefeatedTargetCameraOffset = FVector(0.f, 0.f, 100.f);
 	DefeatedTargetCameraBoomLength = 300.f;
 	Defeated = false;
+	NumberOfEnemiesDefeated = 0;
+	DamageDealt = 0;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -295,10 +297,24 @@ void AUnrealSFASCharacter::OnPlayerDefeated()
 					unrealSFASPlayerController->GetGameUI()->Show(false);
 
 					// Show the game over UI.
-					unrealSFASPlayerController->SpawnGameOverUI();
+					unrealSFASPlayerController->SpawnGameOverUI(NumberOfEnemiesDefeated, DamageDealt);
 				}
 			}
 		}
+	}
+}
+
+void AUnrealSFASCharacter::RecieveDamage(int Amount)
+{
+	// Negative damage will heal the player.
+
+	// Apply damage.
+	Hitpoints -= Amount;
+
+	// Check if the player has been defeated.
+	if (Hitpoints <= 0)
+	{
+		OnPlayerDefeated();
 	}
 }
 
@@ -337,21 +353,6 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AUnrealSFASCharacter::OnResetVR);
-}
-
-void AUnrealSFASCharacter::RecieveDamage(int Amount)
-{
-	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, FString::Printf(TEXT("Player took damage: %d"), Amount));
-	// Negative damage will heal the player.
-
-	// Apply damage.
-	Hitpoints -= Amount;
-
-	// Check if the player has been defeated.
-	if (Hitpoints <= 0)
-	{
-		OnPlayerDefeated();
-	}
 }
 
 void AUnrealSFASCharacter::OnResetVR()
@@ -437,15 +438,13 @@ void AUnrealSFASCharacter::FireWeapon()
 						UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility), 
 						false,
 						ignoredActors, 
-						EDrawDebugTrace::ForDuration, 
+						EDrawDebugTrace::None, 
 						hit,
 						true))
 					{
 						// Check if the hit actor has the "Enemy" tag.
 						if (hit.Actor->ActorHasTag(FName("Enemy")))
 						{
-							UE_LOG(LogTemp, Warning, TEXT("Hit enemy"));
-
 							// Show the hit marker. Start a timer to hide the hitmarker.
 							ShowHitMarker();
 							GetWorldTimerManager().ClearTimer(HitMarkerTimerHandle);
@@ -458,7 +457,12 @@ void AUnrealSFASCharacter::FireWeapon()
 							if (enemy)
 							{
 								// Damage the enemy.
-								enemy->RecieveDamage(FMath::FRandRange(Weapon->GetMinDamage(), Weapon->GetMaxDamage()));
+								int32 damage = FMath::RandRange(Weapon->GetMinDamage(), Weapon->GetMaxDamage());
+								if (enemy->RecieveDamage(damage))
+								{
+									NumberOfEnemiesDefeated++;
+								}
+								DamageDealt += damage;
 							}
 						}
 					}

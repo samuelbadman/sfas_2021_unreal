@@ -70,7 +70,7 @@ void AUnrealSFASPlayerController::BeginPlay()
 	}
 }
 
-void AUnrealSFASPlayerController::SpawnGameOverUI()
+void AUnrealSFASPlayerController::SpawnGameOverUI(int EnemiesDefeated, int TotalDamageDealt)
 {
 	// Spawn game over user interface
 	// Check the game over ui class is valid
@@ -81,6 +81,19 @@ void AUnrealSFASPlayerController::SpawnGameOverUI()
 		// Check game over UI created correctly.
 		if (GameOverUI)
 		{
+			// Setup game over ui.
+			GameOverUI->SetEnemiesDefeatedText(EnemiesDefeated);
+			GameOverUI->SetDamageDealtText(TotalDamageDealt);
+
+			// Check the world is valid.
+			auto* world = GetWorld();
+			if (world)
+			{
+				// Cast to UnrealSFASGameMode.
+				auto* unrealSFASGameMode = CastChecked<AUnrealSFASGameMode>(UGameplayStatics::GetGameMode(world));
+				GameOverUI->SetWavesSurvivedText(unrealSFASGameMode->GetCurrentWaveNumber() - 1);
+			}
+
 			GameOverUI->AddToViewport();
 		}
 	}

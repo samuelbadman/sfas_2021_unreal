@@ -18,6 +18,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Game Over UI")
 	void OnReturnToMenuClicked();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void SetEnemiesDefeatedText(int EnemiesDefeated);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void SetWavesSurvivedText(int WavesSurvived);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void SetDamageDealtText(int Damage);
+
 private:
 	/** Set in the derived blueprint. */
 	UPROPERTY(EditDefaultsOnly, Category = "Game Over UI", meta = (AllowPrivateAccess = "true"))
