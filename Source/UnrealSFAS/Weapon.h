@@ -23,6 +23,7 @@ public:
 	FORCEINLINE float GetShotMaxRange() const { return ShotMaxRange; }
 	FORCEINLINE int GetMinDamage() const { return MinDamage; }
 	FORCEINLINE int GetMaxDamage() const { return MaxDamage; }
+	FORCEINLINE USoundBase* GetFireSound() const { return FireSound; }
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
@@ -48,5 +49,9 @@ private:
 	/** Set in the derived blueprint. The maximum amount of damage a shot of this weapon can do. Used as the top of a range. */
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	int MaxDamage;
+
+	/** Set in the derived blueprint. The sound to play when the weapon fires. */
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	USoundBase* FireSound;
 	/////////////////////////////////////////////////////////////
 };

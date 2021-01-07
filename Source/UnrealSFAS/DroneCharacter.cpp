@@ -24,6 +24,8 @@ ADroneCharacter::ADroneCharacter()
 	hitpoints = 100;
 
 	// The enemy drone AI controller will add the "Enemy" tag when this character is possessed by it.
+
+	DestroyedSound = nullptr;
 }
 
 bool ADroneCharacter::RecieveDamage(int Amount)
@@ -40,6 +42,16 @@ bool ADroneCharacter::RecieveDamage(int Amount)
 		// Notify the game mode a drone has beeen destroyed.
 		auto* unrealSFASGameMode = CastChecked<AUnrealSFASGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
 		unrealSFASGameMode->NotifyDroneDestroyed();
+
+		// Play the destroyed sound.
+		if (DestroyedSound)
+		{
+			auto* world = GetWorld();
+			if (world)
+			{
+				UGameplayStatics::PlaySoundAtLocation(world, DestroyedSound, GetActorLocation());
+			}
+		}
 
 		// Destroy the drone actor.
 		this->Destroy();

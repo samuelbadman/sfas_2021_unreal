@@ -41,7 +41,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
 	GetCharacterMovement()->JumpZVelocity = 200.f;
 	GetCharacterMovement()->AirControl = 0.1f;
-	GetCharacterMovement()->MaxWalkSpeed = 400.f;
+	GetCharacterMovement()->MaxWalkSpeed = 500.f;
 
 	DefaultMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
 
@@ -101,6 +101,10 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	Defeated = false;
 	NumberOfEnemiesDefeated = 0;
 	DamageDealt = 0;
+
+	DroneBulletImpactSound = nullptr;
+	PlayerBulletImpactSound = nullptr;
+	PlayerDefeatedSound = nullptr;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -278,6 +282,12 @@ void AUnrealSFASCharacter::OnPlayerDefeated()
 		auto* world = GetWorld();
 		if (world)
 		{
+			// Play defeated audio.
+			if (PlayerDefeatedSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(world, PlayerDefeatedSound, GetActorLocation());
+			}
+
 			// Check player controller is valid.
 			auto* playerController = UGameplayStatics::GetPlayerController(world, 0);
 			if (playerController)
@@ -320,6 +330,16 @@ void AUnrealSFASCharacter::UpdateHitpointsUI()
 void AUnrealSFASCharacter::RecieveDamage(int Amount)
 {
 	// Negative damage will heal the player.
+
+	// Play impact sound.
+	if (PlayerBulletImpactSound)
+	{
+		auto* world = GetWorld();
+		if (world)
+		{
+			UGameplayStatics::PlaySoundAtLocation(world, PlayerBulletImpactSound, GetActorLocation());
+		}
+	}
 
 	// Apply damage.
 	Hitpoints -= Amount;
@@ -442,7 +462,24 @@ void AUnrealSFASCharacter::FireWeapon()
 					auto cameraForward = CameraManager->GetActorForwardVector();
 
 					// Play the weapon shot animation monatage.
-					PlayAnimMontage(Weapon->GetShotAnimMontage());
+					if (Weapon)
+					{
+						auto* montage = Weapon->GetShotAnimMontage();
+						if (montage)
+						{
+							PlayAnimMontage(montage);
+						}
+					}
+
+					// Play the weapon fire sound at the player's location.
+					if (Weapon)
+					{
+						auto* sound = Weapon->GetFireSound();
+						if (sound)
+						{
+							UGameplayStatics::PlaySoundAtLocation(world, sound, GetActorLocation());
+						}
+					}
 
 					FHitResult hit;
 					TArray<AActor*> ignoredActors;
@@ -479,6 +516,12 @@ void AUnrealSFASCharacter::FireWeapon()
 									NumberOfEnemiesDefeated++;
 								}
 								DamageDealt += damage;
+
+								// Play drone bullet impact sound.
+								if (DroneBulletImpactSound)
+								{
+									UGameplayStatics::PlaySoundAtLocation(world, DroneBulletImpactSound, GetActorLocation());
+								}
 							}
 						}
 					}

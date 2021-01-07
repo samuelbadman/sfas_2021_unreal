@@ -76,6 +76,19 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Enemies, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ACharacter> EnemyCharacterClass;
 	//////////////////////////////////
+	/** Audio category */
+	/** Set in the derived blueprint. The sound to play at the start of a wave. */
+	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
+	USoundBase* WaveStartSound;
+
+	/** Set in the derived blueprint. The sound to play at the end of a wave. */
+	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
+	USoundBase* WaveCompleteSound;
+
+	/** Set in the derived blueprint. The background music sound. */
+	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
+	USoundBase* BackgroundMusic;
+	//////////////////////////////////
 };
 
 

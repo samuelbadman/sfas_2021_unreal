@@ -19,6 +19,7 @@ AWeapon::AWeapon()
 	ShotMaxRange = 1000.0f;
 	MinDamage = 1;
 	MaxDamage = 5;
+	FireSound = nullptr;
 }
 
 

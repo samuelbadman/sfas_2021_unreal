@@ -40,6 +40,9 @@ public:
 
 	FORCEINLINE int GetHitpoints() const { return Hitpoints; }
 
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE bool GetDefeated() const { return Defeated; }
+
 protected:
 
 	/** Resets HMD orientation in VR. */
@@ -196,6 +199,16 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Defeated, meta = (AllowPrivateAccess = "true"))
 	float DefeatedTargetCameraBoomLength;
+	///////////////////////////////////////////////////
+	/** Audio category. */
+	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
+	USoundBase* DroneBulletImpactSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
+	USoundBase* PlayerBulletImpactSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
+	USoundBase* PlayerDefeatedSound;
 	///////////////////////////////////////////////////
 };
 

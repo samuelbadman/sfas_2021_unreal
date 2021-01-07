@@ -37,6 +37,10 @@ AUnrealSFASGameMode::AUnrealSFASGameMode()
 	EnemySpawnVolumeCenterLocation = FVector::ZeroVector;
 	EnemySpawnVolumeExtent = FVector(32.f, 32.f, 32.f);
 	EnemyCharacterClass = nullptr;
+
+	WaveStartSound = nullptr;
+	WaveCompleteSound = nullptr;
+	BackgroundMusic = nullptr;
 }
 
 void AUnrealSFASGameMode::NotifyDroneDestroyed()
@@ -77,6 +81,12 @@ void AUnrealSFASGameMode::BeginPlay()
 
 				StartNextWave();
 			}
+		}
+
+		// Play the background music.
+		if (BackgroundMusic)
+		{
+			UGameplayStatics::PlaySound2D(world, BackgroundMusic);
 		}
 	}
 }
@@ -144,6 +154,12 @@ void AUnrealSFASGameMode::OnWaveComplete()
 	auto* world = GetWorld();
 	if (world)
 	{
+		// Play the wave complete sound.
+		if (WaveCompleteSound)
+		{
+			UGameplayStatics::PlaySound2D(world, WaveCompleteSound);
+		}
+
 		// Notify the wave has started.
 		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
 		unrealSFASPlayerController->GetGameUI()->ShowWaveStatusNotification(CurrentWaveNumber, true);
@@ -159,6 +175,12 @@ void AUnrealSFASGameMode::OnWaveStart()
 	auto* world = GetWorld();
 	if (world)
 	{
+		// Play the wave start sound.
+		if (WaveStartSound)
+		{
+			UGameplayStatics::PlaySound2D(world, WaveStartSound);
+		}
+
 		// Notify the wave has been completed.
 		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
 		unrealSFASPlayerController->GetGameUI()->ShowWaveStatusNotification(CurrentWaveNumber, false);

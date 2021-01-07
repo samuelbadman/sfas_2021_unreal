@@ -21,4 +21,8 @@ public:
 private:
 	UPROPERTY(BlueprintReadOnly, Category = Damage, meta = (AllowPrivateAccess = "true"))
 	int hitpoints;
+
+	/** The sound to play when the drone is destroyed. */
+	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
+	USoundBase* DestroyedSound;
 };
