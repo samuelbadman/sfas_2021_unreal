@@ -102,9 +102,8 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	NumberOfEnemiesDefeated = 0;
 	DamageDealt = 0;
 
-	DroneBulletImpactSound = nullptr;
-	PlayerBulletImpactSound = nullptr;
-	PlayerDefeatedSound = nullptr;
+	BulletImpactSound = nullptr;
+	DefeatedSound = nullptr;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -283,9 +282,9 @@ void AUnrealSFASCharacter::OnPlayerDefeated()
 		if (world)
 		{
 			// Play defeated audio.
-			if (PlayerDefeatedSound)
+			if (DefeatedSound)
 			{
-				UGameplayStatics::PlaySoundAtLocation(world, PlayerDefeatedSound, GetActorLocation());
+				UGameplayStatics::PlaySoundAtLocation(world, DefeatedSound, GetActorLocation());
 			}
 
 			// Check player controller is valid.
@@ -332,12 +331,12 @@ void AUnrealSFASCharacter::RecieveDamage(int Amount)
 	// Negative damage will heal the player.
 
 	// Play impact sound.
-	if (PlayerBulletImpactSound)
+	if (BulletImpactSound)
 	{
 		auto* world = GetWorld();
 		if (world)
 		{
-			UGameplayStatics::PlaySoundAtLocation(world, PlayerBulletImpactSound, GetActorLocation());
+			UGameplayStatics::PlaySoundAtLocation(world, BulletImpactSound, GetActorLocation());
 		}
 	}
 
@@ -469,15 +468,21 @@ void AUnrealSFASCharacter::FireWeapon()
 						{
 							PlayAnimMontage(montage);
 						}
-					}
 
-					// Play the weapon fire sound at the player's location.
-					if (Weapon)
-					{
+						// Play the weapon fire sound at the player's location.
 						auto* sound = Weapon->GetFireSound();
 						if (sound)
 						{
 							UGameplayStatics::PlaySoundAtLocation(world, sound, GetActorLocation());
+						}
+
+						// Spawn muzzle flash particles system.
+						auto* muzzleEmitterTemplate = Weapon->GetMuzzleFlashEmitterTemplate();
+						if (muzzleEmitterTemplate)
+						{
+							auto* muzzleScene = Weapon->GetMuzzeFlashScene();
+							UGameplayStatics::SpawnEmitterAttached(muzzleEmitterTemplate, muzzleScene, FName("None"), muzzleScene->GetComponentLocation(),
+								muzzleScene->GetComponentRotation(), EAttachLocation::KeepWorldPosition, true, EPSCPoolMethod::AutoRelease);
 						}
 					}
 
@@ -516,12 +521,6 @@ void AUnrealSFASCharacter::FireWeapon()
 									NumberOfEnemiesDefeated++;
 								}
 								DamageDealt += damage;
-
-								// Play drone bullet impact sound.
-								if (DroneBulletImpactSound)
-								{
-									UGameplayStatics::PlaySoundAtLocation(world, DroneBulletImpactSound, GetActorLocation());
-								}
 							}
 						}
 					}

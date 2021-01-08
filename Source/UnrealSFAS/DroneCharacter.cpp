@@ -20,12 +20,17 @@ ADroneCharacter::ADroneCharacter()
 	// Set spawn collision handling to adjust if possible but always spawn the actor.
 	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
+	// Setup muzzle flash scene.
+	MuzzleFlashScene = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleFlashScene"));
+	MuzzleFlashScene->SetupAttachment(GetMesh());
+
 	// Set member default values.
 	hitpoints = 100;
+	BulletImpactSound = nullptr;
+	DestroyedSound = nullptr;
+	MuzzleFlashEmitterTemplate = nullptr;
 
 	// The enemy drone AI controller will add the "Enemy" tag when this character is possessed by it.
-
-	DestroyedSound = nullptr;
 }
 
 bool ADroneCharacter::RecieveDamage(int Amount)
@@ -33,30 +38,36 @@ bool ADroneCharacter::RecieveDamage(int Amount)
 	// Recieving negative damage can heal the drone.
 	//if (Amount <= 0.f) return false;
 
-	// Apply the damage.
-	hitpoints -= Amount;
-
-	// Check if the drone's hitpoints have been reduced to 0.
-	if (hitpoints <= 0)
+	auto* world = GetWorld();
+	if (world)
 	{
-		// Notify the game mode a drone has beeen destroyed.
-		auto* unrealSFASGameMode = CastChecked<AUnrealSFASGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
-		unrealSFASGameMode->NotifyDroneDestroyed();
-
-		// Play the destroyed sound.
-		if (DestroyedSound)
+		// Play the impact sound.
+		if (BulletImpactSound)
 		{
-			auto* world = GetWorld();
-			if (world)
+			UGameplayStatics::PlaySoundAtLocation(world, BulletImpactSound, GetActorLocation());
+		}
+
+		// Apply the damage.
+		hitpoints -= Amount;
+
+		// Check if the drone's hitpoints have been reduced to 0.
+		if (hitpoints <= 0)
+		{
+			// Notify the game mode a drone has beeen destroyed.
+			auto* unrealSFASGameMode = CastChecked<AUnrealSFASGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+			unrealSFASGameMode->NotifyDroneDestroyed();
+
+			// Play the destroyed sound.
+			if (DestroyedSound)
 			{
 				UGameplayStatics::PlaySoundAtLocation(world, DestroyedSound, GetActorLocation());
 			}
+
+			// Destroy the drone actor.
+			this->Destroy();
+
+			return true;
 		}
-
-		// Destroy the drone actor.
-		this->Destroy();
-
-		return true;
 	}
 
 	return false;

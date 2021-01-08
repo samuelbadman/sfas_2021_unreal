@@ -202,13 +202,10 @@ private:
 	///////////////////////////////////////////////////
 	/** Audio category. */
 	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
-	USoundBase* DroneBulletImpactSound;
+	USoundBase* BulletImpactSound;
 
 	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
-	USoundBase* PlayerBulletImpactSound;
-
-	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
-	USoundBase* PlayerDefeatedSound;
+	USoundBase* DefeatedSound;
 	///////////////////////////////////////////////////
 };
 
