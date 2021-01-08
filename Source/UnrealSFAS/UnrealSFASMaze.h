@@ -20,7 +20,9 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-
 	UPROPERTY(EditDefaultsOnly, Category = Maze)
 	UStaticMesh* WallMesh;
+
+	UPROPERTY(EditDefaultsOnly, Category = Maze)
+	UMaterialInterface* WallMaterial;
 };

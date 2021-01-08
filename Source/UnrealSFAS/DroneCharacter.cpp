@@ -29,6 +29,7 @@ ADroneCharacter::ADroneCharacter()
 	BulletImpactSound = nullptr;
 	DestroyedSound = nullptr;
 	MuzzleFlashEmitterTemplate = nullptr;
+	ExplosionEmitterTemplate = nullptr;
 
 	// The enemy drone AI controller will add the "Enemy" tag when this character is possessed by it.
 }
@@ -61,6 +62,16 @@ bool ADroneCharacter::RecieveDamage(int Amount)
 			if (DestroyedSound)
 			{
 				UGameplayStatics::PlaySoundAtLocation(world, DestroyedSound, GetActorLocation());
+			}
+
+			// Spawn explosion particle system.
+			if (ExplosionEmitterTemplate)
+			{
+				auto* mesh = GetMesh();
+				if (mesh)
+				{
+					UGameplayStatics::SpawnEmitterAtLocation(world, ExplosionEmitterTemplate, mesh->GetComponentLocation(), mesh->GetComponentRotation(), true, EPSCPoolMethod::AutoRelease);
+				}
 			}
 
 			// Destroy the drone actor.

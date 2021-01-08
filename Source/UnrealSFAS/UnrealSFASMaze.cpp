@@ -10,6 +10,9 @@ AUnrealSFASMaze::AUnrealSFASMaze()
  	// No need to tick the maze at this point
 	PrimaryActorTick.bCanEverTick = false;
 
+	// Set actor defaults
+	WallMesh = nullptr;
+	WallMaterial = nullptr;
 }
 
 // Called when the game starts or when spawned
@@ -78,6 +81,12 @@ void AUnrealSFASMaze::BeginPlay()
 						meshComponent->SetStaticMesh(WallMesh);
 						meshComponent->SetWorldTransform(worldXForm);
 						meshComponent->AttachToComponent(rootComponent, FAttachmentTransformRules::KeepWorldTransform);
+
+						// Set the wall material if valid
+						if (WallMaterial)
+						{
+							meshComponent->SetMaterial(0, WallMaterial);
+						}
 
 						// Set the mesh component to affect the nav mesh
 						meshComponent->SetCanEverAffectNavigation(true);

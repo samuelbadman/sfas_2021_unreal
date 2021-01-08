@@ -38,6 +38,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Particles, meta = (AllowPrivateAccess = "true"))
 	UParticleSystem* MuzzleFlashEmitterTemplate;
 
+	/** The particle emitter template to use to play an explosion. */
+	UPROPERTY(EditDefaultsOnly, Category = Particles, meta = (AllowPrivateAccess = "true"))
+	UParticleSystem* ExplosionEmitterTemplate;
+
 	/** Audio category */
 	/** The sound to play when the drone is shot. */
 	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
