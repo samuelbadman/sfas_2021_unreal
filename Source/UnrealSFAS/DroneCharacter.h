@@ -14,9 +14,15 @@ class UNREALSFAS_API ADroneCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Particles, meta = (AllowPrivateAccess = "true"))
 	USceneComponent* MuzzleFlashScene;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Particles, meta = (AllowPrivateAccess = "true"))
+	UAudioComponent* MotorAudioSource;
+
 public:
 	// Sets default values for this character's properties
 	ADroneCharacter();
+
+	// Called every tick
+	void Tick(float DeltaTime) override;
 
 	/** Damages the drone character, reducing its hitpoints value. Returns whether the damage destroyed the drone character. Can be extended by derived blueprint */
 	bool RecieveDamage(int Amount);
@@ -29,6 +35,8 @@ public:
 	FORCEINLINE UParticleSystem* GetMuzzleFlashEmitterTemplate() const { return MuzzleFlashEmitterTemplate; }
 
 private:
+	float DefaultMotorAudioPitchMultiplier;
+
 	UPROPERTY(BlueprintReadOnly, Category = Damage, meta = (AllowPrivateAccess = "true"))
 	int hitpoints;
 
@@ -43,6 +51,10 @@ private:
 	UParticleSystem* ExplosionEmitterTemplate;
 
 	/** Audio category */
+	/** The maximum value that can be set as the pitch multiplier. */
+	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
+	float MaxMotorAudioPitchMultiplierModifier;
+
 	/** The sound to play when the drone is shot. */
 	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
 	USoundBase* BulletImpactSound;

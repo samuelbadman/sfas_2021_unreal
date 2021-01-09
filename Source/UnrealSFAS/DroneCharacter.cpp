@@ -4,12 +4,15 @@
 #include "DroneCharacter.h"
 #include "UnrealSFASGameMode.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 ADroneCharacter::ADroneCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	// Set the skeletal mesh component to block the visibility collision channel.
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
@@ -24,14 +27,31 @@ ADroneCharacter::ADroneCharacter()
 	MuzzleFlashScene = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleFlashScene"));
 	MuzzleFlashScene->SetupAttachment(GetMesh());
 
+	// Setup motor audio source audio component.
+	MotorAudioSource = CreateDefaultSubobject<UAudioComponent>(TEXT("MotorAudioSource"));
+	MotorAudioSource->SetupAttachment(GetMesh());
+	MotorAudioSource->SetVolumeMultiplier(0.75f);
+	DefaultMotorAudioPitchMultiplier = 0.125f;
+	MotorAudioSource->SetPitchMultiplier(DefaultMotorAudioPitchMultiplier);
+
 	// Set member default values.
 	hitpoints = 100;
+	MaxMotorAudioPitchMultiplierModifier = 4.f;
 	BulletImpactSound = nullptr;
 	DestroyedSound = nullptr;
 	MuzzleFlashEmitterTemplate = nullptr;
 	ExplosionEmitterTemplate = nullptr;
 
 	// The enemy drone AI controller will add the "Enemy" tag when this character is possessed by it.
+}
+
+void ADroneCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// Adjust the motor audio pitch based on the character's velocity. Higher velocity = higher pitch multiplier
+	auto mapped = UKismetMathLibrary::MapRangeClamped(GetVelocity().Size(), 0.f, GetCharacterMovement()->MaxWalkSpeed, 0.f, 4.f);
+	MotorAudioSource->SetPitchMultiplier(FMath::Clamp(DefaultMotorAudioPitchMultiplier + mapped, DefaultMotorAudioPitchMultiplier, MaxMotorAudioPitchMultiplierModifier));
 }
 
 bool ADroneCharacter::RecieveDamage(int Amount)
