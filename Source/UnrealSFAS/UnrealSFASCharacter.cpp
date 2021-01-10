@@ -79,6 +79,10 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	// Set collision response to visibility channel to block.
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
+	// Enable custom depth stencil render on the player's mesh. This is used to mask the player in a post process material.
+	GetMesh()->SetRenderCustomDepth(true);
+	GetMesh()->SetCustomDepthStencilValue(3);
+
 	// Set default member values
 	CameraZoomSpeed = 4.f;
 	CameraMoveSpeed = 4.f;

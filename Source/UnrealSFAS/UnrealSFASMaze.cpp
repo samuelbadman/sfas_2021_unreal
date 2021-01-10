@@ -82,11 +82,16 @@ void AUnrealSFASMaze::BeginPlay()
 						meshComponent->SetWorldTransform(worldXForm);
 						meshComponent->AttachToComponent(rootComponent, FAttachmentTransformRules::KeepWorldTransform);
 
+						// Used for post process outline effect.
+						meshComponent->SetRenderCustomDepth(true);
+						meshComponent->SetCustomDepthStencilValue(2);
+
 						// Set the wall material if valid
 						if (WallMaterial)
 						{
 							meshComponent->SetMaterial(0, WallMaterial);
 						}
+
 
 						// Set the mesh component to affect the nav mesh
 						meshComponent->SetCanEverAffectNavigation(true);

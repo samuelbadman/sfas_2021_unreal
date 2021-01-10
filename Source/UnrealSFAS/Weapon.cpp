@@ -12,6 +12,9 @@ AWeapon::AWeapon()
 	// Setup static mesh component
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
 	RootComponent = StaticMesh;
+	// Include the weapon mesh in the player mask.
+	StaticMesh->SetRenderCustomDepth(true);
+	StaticMesh->SetCustomDepthStencilValue(3);
 
 	// Setup muzzle flash scene component
 	MuzzleFlashScene = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleFlashScene"));
