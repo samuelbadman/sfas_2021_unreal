@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UnrealSFASPlayerController.h"
 #include "GameUI.h"
+#include "DroneCharacter.h"
 
 AUnrealSFASGameMode::AUnrealSFASGameMode()
 {
@@ -113,12 +114,16 @@ void AUnrealSFASGameMode::StartWave(int WaveNumber)
 				FVector randomLoc = UKismetMathLibrary::RandomPointInBoundingBox(enemySpawnVolumeBox->GetComponentLocation(), enemySpawnVolumeBox->GetUnscaledBoxExtent());
 
 				// Spawn the enemy at the found location.
-				auto* spawnedEnemy = world->SpawnActor<ACharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator);
+				auto* spawnedEnemy = world->SpawnActor<ADroneCharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator);
 
 				// Check the enemy was spawned succesfully.
 				if (spawnedEnemy)
 				{
 					CurrentNumberOfEnemies++;
+
+					// Add additional hitpoints based on wave number.
+					int baseAdditionalDroneHitpoints = 5;
+					spawnedEnemy->AddHitpoints(baseAdditionalDroneHitpoints * WaveNumber);
 				}
 			}
 

@@ -24,7 +24,7 @@ public:
 	// Called every tick
 	void Tick(float DeltaTime) override;
 
-	/** Damages the drone character, reducing its hitpoints value. Returns whether the damage destroyed the drone character. Can be extended by derived blueprint */
+	/** Damages the drone character, reducing its Hitpoints value. Returns whether the damage destroyed the drone character. Can be extended by derived blueprint */
 	bool RecieveDamage(int Amount);
 
 	/** Returns the muzzle flash scene component. */
@@ -34,11 +34,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Particles)
 	FORCEINLINE UParticleSystem* GetMuzzleFlashEmitterTemplate() const { return MuzzleFlashEmitterTemplate; }
 
+	/** Adds Hitpoints to the current Hitpoints total. */
+	void AddHitpoints(int Amount);
+
 private:
 	float DefaultMotorAudioPitchMultiplier;
 
 	UPROPERTY(BlueprintReadOnly, Category = Damage, meta = (AllowPrivateAccess = "true"))
-	int hitpoints;
+	int Hitpoints;
 
 	///////////////////////////////////////////////
 	/** Particles category */

@@ -35,7 +35,7 @@ ADroneCharacter::ADroneCharacter()
 	MotorAudioSource->SetPitchMultiplier(DefaultMotorAudioPitchMultiplier);
 
 	// Set member default values.
-	hitpoints = 100;
+	Hitpoints = 100;
 	MaxMotorAudioPitchMultiplierModifier = 4.f;
 	BulletImpactSound = nullptr;
 	DestroyedSound = nullptr;
@@ -69,10 +69,10 @@ bool ADroneCharacter::RecieveDamage(int Amount)
 		}
 
 		// Apply the damage.
-		hitpoints -= Amount;
+		Hitpoints -= Amount;
 
-		// Check if the drone's hitpoints have been reduced to 0.
-		if (hitpoints <= 0)
+		// Check if the drone's Hitpoints have been reduced to 0.
+		if (Hitpoints <= 0)
 		{
 			// Notify the game mode a drone has beeen destroyed.
 			auto* unrealSFASGameMode = CastChecked<AUnrealSFASGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
@@ -102,4 +102,9 @@ bool ADroneCharacter::RecieveDamage(int Amount)
 	}
 
 	return false;
+}
+
+void ADroneCharacter::AddHitpoints(int Amount)
+{
+	Hitpoints += Amount;
 }
