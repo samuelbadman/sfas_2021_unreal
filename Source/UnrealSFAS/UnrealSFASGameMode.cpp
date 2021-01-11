@@ -122,8 +122,7 @@ void AUnrealSFASGameMode::StartWave(int WaveNumber)
 					CurrentNumberOfEnemies++;
 
 					// Add additional hitpoints based on wave number.
-					int baseAdditionalDroneHitpoints = 5;
-					spawnedEnemy->AddHitpoints(baseAdditionalDroneHitpoints * WaveNumber);
+					spawnedEnemy->AddHitpoints(CalculateAdditionalEnemyHitpointsForWave(WaveNumber));
 				}
 			}
 
@@ -205,4 +204,10 @@ void AUnrealSFASGameMode::OnNotificationExpired()
 		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
 		unrealSFASPlayerController->GetGameUI()->HideWaveStatusNotification();
 	}
+}
+
+int AUnrealSFASGameMode::CalculateAdditionalEnemyHitpointsForWave(int WaveNumber)
+{
+	int baseAdditionalDroneHitpoints = 5;
+	return baseAdditionalDroneHitpoints* WaveNumber;
 }

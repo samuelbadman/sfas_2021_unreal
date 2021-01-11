@@ -25,9 +25,12 @@ void AUnrealSFASMaze::BeginPlay()
 		const int32 mazeSize = 20;
 		const float blockSize = 200.0f;
 		const float blockWidth = 2.0f;
-		const float blockHeight = 5.0f;
-		const float blockZPos = 50.0f;
 		const float mazeDensity = 0.1f; // In the range 0 - 1. 1 is more dense
+		const float tallBlockZPos = 150.0f;
+		const float tallBlockHeight = 3.f;
+		const float shortBlockZPos = 75.0f;
+		const float shortBlockHeight = 1.5f;
+		const float tallBlockDensity = 0.6f; // In the range 0 - 1. 1 is more dense
 
 		if (mazeSize > 0)
 		{
@@ -55,7 +58,7 @@ void AUnrealSFASMaze::BeginPlay()
 			float xPos = 0.0f;
 			float yPos = 0.0f;
 			FQuat worldRotation(FVector(0.0f, 0.0f, 1.0f), 0.0f);
-			FVector worldScale(blockWidth, blockWidth, blockHeight);
+			FVector worldScale(blockWidth, blockWidth, 0.0f);
 			uint32 mazeRow;
 
 			USceneComponent* rootComponent = GetRootComponent();
@@ -74,6 +77,17 @@ void AUnrealSFASMaze::BeginPlay()
 
 					if (mazeValue)
 					{
+						float blockZPos = shortBlockZPos;
+						float blockHeight = shortBlockHeight;
+
+						if (UKismetMathLibrary::RandomBoolWithWeight(tallBlockDensity))
+						{
+							blockZPos = tallBlockZPos;
+							blockHeight = tallBlockHeight;
+						}
+
+						worldScale.Z = blockHeight;
+
 						UStaticMeshComponent* meshComponent = NewObject<UStaticMeshComponent>(this);
 						FVector worldPosition(xPos, yPos, blockZPos);
 						FTransform worldXForm(worldRotation, worldPosition, worldScale);

@@ -43,6 +43,8 @@ private:
 	/** Called when a wave status notification has expired. Hides the appropriate UI widget. */
 	void OnNotificationExpired();
 
+	int CalculateAdditionalEnemyHitpointsForWave(int WaveNumber);
+
 private:
 	int CurrentWaveNumber;
 	int CurrentNumberOfEnemies;
