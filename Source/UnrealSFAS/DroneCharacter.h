@@ -66,4 +66,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
 	USoundBase* DestroyedSound;
 	///////////////////////////////////////////////
+	/** Stats category. */
+	/** Determines the rate at which the drone drops a pickup when it is destroyed. In the range 0 - 1, 1 is more likely to drop a pickup. */
+	UPROPERTY(EditDefaultsOnly, Category = Pickup, meta = (AllowPrivateAccess = "true"))
+	float PickupDropRate;
+
+	/** The pickup class to spawn if the drone drops a pickup. */
+	UPROPERTY(EditDefaultsOnly, Category = Pickup, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class APickup> PickupClassToDrop;
 };

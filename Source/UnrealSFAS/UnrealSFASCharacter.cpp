@@ -100,6 +100,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	AimingOverRightShoulder = true;
 	HitMarkerDisplayDuration = 0.15f;
 	Hitpoints = 100;
+	MaximumHitpoints = Hitpoints;
 	DefeatedTargetCameraOffset = FVector(0.f, 0.f, 100.f);
 	DefeatedTargetCameraBoomLength = 300.f;
 	Defeated = false;
@@ -108,6 +109,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 
 	BulletImpactSound = nullptr;
 	DefeatedSound = nullptr;
+	HealingSound = nullptr;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -332,23 +334,34 @@ void AUnrealSFASCharacter::UpdateHitpointsUI()
 
 void AUnrealSFASCharacter::RecieveDamage(int Amount)
 {
-	// Negative damage will heal the player.
-
-	// Play impact sound.
-	if (BulletImpactSound)
+	// Check the world is valid.
+	auto* world = GetWorld();
+	if (world)
 	{
-		auto* world = GetWorld();
-		if (world)
+		// Check if the incoming damage is negative.
+		if (Amount < 0)
 		{
-			UGameplayStatics::PlaySoundAtLocation(world, BulletImpactSound, GetActorLocation());
+			// Play healing sound.
+			if (HealingSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(world, HealingSound, GetActorLocation());
+			}
+		}
+		else
+		{
+			// Play impact sound.
+			if (BulletImpactSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(world, BulletImpactSound, GetActorLocation());
+			}
 		}
 	}
 
-	// Apply damage.
-	Hitpoints -= Amount;
+	// Apply damage, ensuring hitpoints cannot exceed maximum.
+	Hitpoints = FMath::Clamp(Hitpoints -= Amount, 0, MaximumHitpoints);
 
 	// Check if the player has been defeated.
-	if (Hitpoints <= 0)
+	if (Hitpoints == 0)
 	{
 		OnPlayerDefeated();
 	}

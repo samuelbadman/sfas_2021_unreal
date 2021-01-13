@@ -34,7 +34,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
-	/** Damages the player character's Hitpoints. */
+	/** Damages the player character's Hitpoints. A negative damage amount will heal the player. */
 	UFUNCTION(BlueprintCallable, Category = Damage)
 	void RecieveDamage(int Amount);
 
@@ -206,6 +206,12 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
 	USoundBase* DefeatedSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = Audio, meta = (AllowPrivateAccess = "true"))
+	USoundBase* HealingSound;
 	///////////////////////////////////////////////////
+	/** Stats category. */
+	UPROPERTY(EditDefaultsOnly, Category = Stats, meta = (AllowPrivateAccess = "true"))
+	int MaximumHitpoints;
 };
 

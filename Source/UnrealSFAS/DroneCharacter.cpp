@@ -7,6 +7,7 @@
 #include "Components/AudioComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "HitpointsPickup.h"
 
 // Sets default values
 ADroneCharacter::ADroneCharacter()
@@ -41,6 +42,8 @@ ADroneCharacter::ADroneCharacter()
 	DestroyedSound = nullptr;
 	MuzzleFlashEmitterTemplate = nullptr;
 	ExplosionEmitterTemplate = nullptr;
+	PickupDropRate = 0.5f;
+	PickupClassToDrop = nullptr;
 
 	// The enemy drone AI controller will add the "Enemy" tag when this character is possessed by it.
 }
@@ -91,6 +94,16 @@ bool ADroneCharacter::RecieveDamage(int Amount)
 				if (mesh)
 				{
 					UGameplayStatics::SpawnEmitterAtLocation(world, ExplosionEmitterTemplate, mesh->GetComponentLocation(), mesh->GetComponentRotation(), true, EPSCPoolMethod::AutoRelease);
+				}
+			}
+
+			// Should the drone drop a pickup?
+			if (UKismetMathLibrary::RandomBoolWithWeight(PickupDropRate))
+			{
+				// Spawn the set pickup actor.
+				if (PickupClassToDrop)
+				{
+					world->SpawnActor<AHitpointsPickup>(PickupClassToDrop.Get(), GetActorLocation(), GetActorRotation());
 				}
 			}
 
