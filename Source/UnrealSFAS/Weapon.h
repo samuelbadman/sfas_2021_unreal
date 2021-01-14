@@ -33,6 +33,7 @@ public:
 	FORCEINLINE int GetMaxDamage() const { return MaxDamage; }
 	FORCEINLINE USoundBase* GetFireSound() const { return FireSound; }
 	FORCEINLINE UParticleSystem* GetMuzzleFlashEmitterTemplate() const { return MuzzleFlashEmitterTemplate; }
+	FORCEINLINE float GetMaximumDeviation() const { return MaximumDeviation; }
 
 private:
 	/** Weapon category */
@@ -63,5 +64,9 @@ private:
 	/** The particle system to spawn at the weapon's muzzle location when fired. Creates a muzzle flash effect. */
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	UParticleSystem* MuzzleFlashEmitterTemplate;
+
+	/** The maximum units a shot of this weapon can deviate when fired with low accuracy. */
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	float MaximumDeviation;
 	/////////////////////////////////////////////////////////////
 };

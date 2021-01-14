@@ -28,6 +28,7 @@ AWeapon::AWeapon()
 	MaxDamage = 5;
 	FireSound = nullptr;
 	MuzzleFlashEmitterTemplate = nullptr;
+	MaximumDeviation = 50.f;
 }
 
 

@@ -146,6 +146,7 @@ private:
 	bool Aiming;
 	bool AimingOverRightShoulder;
 	FVector DefaultCameraRelativeLocation;
+	float Accuracy;
 
 	FTimerHandle HitMarkerTimerHandle;
 
@@ -188,6 +189,10 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
 	float AimMaxWalkSpeed;
+
+	/** The rate to decrease accuracy at when the player is moving.  */
+	UPROPERTY(EditDefaultsOnly, Category = Aim, meta = (AllowPrivateAccess = "true"))
+	float MovingAccuracyDecreaseScale;
 	///////////////////////////////////////////////////
 	/** UI category */
 	UPROPERTY(EditDefaultsOnly, Category = UI, meta = (AllowPrivateAccess = "true"))

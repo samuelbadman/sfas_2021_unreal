@@ -28,8 +28,8 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
 	// set our turn rates for input
-	BaseTurnRate = 45.f;
-	BaseLookUpRate = 45.f;
+	BaseTurnRate = 45.f * 2.f;
+	BaseLookUpRate = 45.f * 2.f;
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -96,6 +96,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	TargetViewPitchMax = 0.f;
 	GameSecondsAtLastShot = 0.f;
 	AimMaxWalkSpeed = 275.f;
+	MovingAccuracyDecreaseScale = 1.f;
 	Aiming = false;
 	AimingOverRightShoulder = true;
 	HitMarkerDisplayDuration = 0.15f;
@@ -106,6 +107,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	Defeated = false;
 	NumberOfEnemiesDefeated = 0;
 	DamageDealt = 0;
+	Accuracy = 0.f;
 
 	BulletImpactSound = nullptr;
 	DefeatedSound = nullptr;
@@ -146,9 +148,7 @@ void AUnrealSFASCharacter::Tick(float DeltaTime)
 	UpdateViewPitch(DeltaTime);
 
 	// Calculate accuracy offset based on velocity. Standing still is 0, moving is up to max aim offset
-	static float accuracy = 0.f;
-	static float accuracyScale = 1.f;
-	accuracy = GetVelocity().Size() * accuracyScale;
+	Accuracy = GetVelocity().Size() * MovingAccuracyDecreaseScale;
 
 	// Update the reticle UI to reflect weapon accuracy.
 	static auto* world = GetWorld();
@@ -157,9 +157,9 @@ void AUnrealSFASCharacter::Tick(float DeltaTime)
 		auto* pc = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 		auto* gameUI = pc->GetGameUI();
 		gameUI->UpdateReticleTargetPosition(FMath::GetMappedRangeValueClamped(
-			FVector2D(0.f, GetCharacterMovement()->MaxWalkSpeed),
+			FVector2D(0.f, GetCharacterMovement()->MaxWalkSpeed * MovingAccuracyDecreaseScale),
 			FVector2D(0.f, gameUI->GetMaxReticleSlateUnitOffset()), 
-			accuracy));
+			Accuracy));
 		gameUI->InterpReticleToTargetPosition(DeltaTime);
 	}
 
@@ -495,9 +495,10 @@ void AUnrealSFASCharacter::FireWeapon()
 					auto cameraLoc = CameraManager->GetCameraLocation();
 					auto cameraForward = CameraManager->GetActorForwardVector();
 
-					// Play the weapon shot animation monatage.
+					// Play the weapon shot effects.
 					if (Weapon)
 					{
+						// Play the weapon shot animation montage.
 						auto* montage = Weapon->GetShotAnimMontage();
 						if (montage)
 						{
@@ -519,43 +520,58 @@ void AUnrealSFASCharacter::FireWeapon()
 							UGameplayStatics::SpawnEmitterAttached(muzzleEmitterTemplate, muzzleScene, FName("None"), muzzleScene->GetComponentLocation(),
 								muzzleScene->GetComponentRotation(), EAttachLocation::KeepWorldPosition, true, EPSCPoolMethod::AutoRelease);
 						}
-					}
 
-					FHitResult hit;
-					TArray<AActor*> ignoredActors;
-					// Trace in the ECC_Visibility channel for any actor except for self.
-					if (UKismetSystemLibrary::LineTraceSingle(
-						world, 
-						cameraLoc,
-						cameraLoc + (cameraForward * Weapon->GetShotMaxRange()), 
-						UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility), 
-						false,
-						ignoredActors, 
-						EDrawDebugTrace::None, 
-						hit,
-						true))
-					{
-						// Check if the hit actor has the "Enemy" tag.
-						if (hit.Actor->ActorHasTag(FName("Enemy")))
+						FHitResult hit;
+						TArray<AActor*> ignoredActors;
+
+						// Calculate and apply accuracy offset to the trace end point.
+						auto deviation = FMath::GetMappedRangeValueClamped(
+							FVector2D(0.f, GetCharacterMovement()->MaxWalkSpeed * MovingAccuracyDecreaseScale),
+							FVector2D(0.f, Weapon->GetMaximumDeviation()),
+							Accuracy
+						);
+						GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Cyan, FString::Printf(TEXT("mappedAccuracy: %f"), deviation));
+
+						auto traceEndLocation = cameraLoc + (cameraForward * Weapon->GetShotMaxRange());
+
+						//UKismetMathLibrary::RandomFloatInRange(-deviation, deviation)
+						// Deviate end point
+						// Offset in random 2D direction away from traceEndLocation
+
+						// Trace in the ECC_Visibility channel for any actor except for self.
+						if (UKismetSystemLibrary::LineTraceSingle(
+							world,
+							cameraLoc,
+							traceEndLocation,
+							UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility),
+							false,
+							ignoredActors,
+							EDrawDebugTrace::ForDuration,
+							hit,
+							true))
 						{
-							// Show the hit marker. Start a timer to hide the hitmarker.
-							ShowHitMarker();
-							GetWorldTimerManager().ClearTimer(HitMarkerTimerHandle);
-							GetWorldTimerManager().SetTimer(HitMarkerTimerHandle, this, &AUnrealSFASCharacter::HideHitMarker, HitMarkerDisplayDuration, false);
-
-							// Cast the hit actor to ADroneCharacter.
-							auto* enemy = Cast<ADroneCharacter>(hit.Actor);
-
-							// Check the cast was successful.
-							if (enemy)
+							// Check if the hit actor has the "Enemy" tag.
+							if (hit.Actor->ActorHasTag(FName("Enemy")))
 							{
-								// Damage the enemy.
-								int32 damage = FMath::RandRange(Weapon->GetMinDamage(), Weapon->GetMaxDamage());
-								if (enemy->RecieveDamage(damage))
+								// Show the hit marker. Start a timer to hide the hitmarker.
+								ShowHitMarker();
+								GetWorldTimerManager().ClearTimer(HitMarkerTimerHandle);
+								GetWorldTimerManager().SetTimer(HitMarkerTimerHandle, this, &AUnrealSFASCharacter::HideHitMarker, HitMarkerDisplayDuration, false);
+
+								// Cast the hit actor to ADroneCharacter.
+								auto* enemy = Cast<ADroneCharacter>(hit.Actor);
+
+								// Check the cast was successful.
+								if (enemy)
 								{
-									NumberOfEnemiesDefeated++;
+									// Damage the enemy.
+									int32 damage = FMath::RandRange(Weapon->GetMinDamage(), Weapon->GetMaxDamage());
+									if (enemy->RecieveDamage(damage))
+									{
+										NumberOfEnemiesDefeated++;
+									}
+									DamageDealt += damage;
 								}
-								DamageDealt += damage;
 							}
 						}
 					}
