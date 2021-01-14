@@ -145,7 +145,25 @@ void AUnrealSFASCharacter::Tick(float DeltaTime)
 	UpdateCameraLocationOffset(DeltaTime);
 	UpdateViewPitch(DeltaTime);
 
-	// Force follow camera to look at the capsule component.
+	// Calculate accuracy offset based on velocity. Standing still is 0, moving is up to max aim offset
+	static float accuracy = 0.f;
+	static float accuracyScale = 1.f;
+	accuracy = GetVelocity().Size() * accuracyScale;
+
+	// Update the reticle UI to reflect weapon accuracy.
+	static auto* world = GetWorld();
+	if (world)
+	{
+		auto* pc = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+		auto* gameUI = pc->GetGameUI();
+		gameUI->UpdateReticleTargetPosition(FMath::GetMappedRangeValueClamped(
+			FVector2D(0.f, GetCharacterMovement()->MaxWalkSpeed),
+			FVector2D(0.f, gameUI->GetMaxReticleSlateUnitOffset()), 
+			accuracy));
+		gameUI->InterpReticleToTargetPosition(DeltaTime);
+	}
+
+	// Force follow camera to look at the capsule component when the player has been defeated.
 	if (Hitpoints <= 0)
 	{
 		FollowCamera->SetWorldRotation(UKismetMathLibrary::FindLookAtRotation(FollowCamera->GetComponentLocation(), GetCapsuleComponent()->GetComponentLocation()));

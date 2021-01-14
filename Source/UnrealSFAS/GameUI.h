@@ -39,16 +39,41 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
 	void SetHitpointsValue(int Hitpoints);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Reticle")
+	void UpdateReticleTargetPosition(float Accuracy);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Reticle")
+	void InterpReticleToTargetPosition(float DeltaTime);
+
+	FORCEINLINE float GetMaxReticleSlateUnitOffset() const { return MaxReticleSlateUnitOffset; }
+
 protected:
 	void NativeConstruct() override;
 
 private:
 	UMaterialInstanceDynamic* DynamicDotMaterial;
 
+	UPROPERTY(BlueprintReadWrite, Category = "Reticle", meta = (AllowPrivateAccess = "true"))
+	FVector2D ReticleNorthTargetPosition;
+	UPROPERTY(BlueprintReadWrite, Category = "Reticle", meta = (AllowPrivateAccess = "true"))
+	FVector2D ReticleSouthTargetPosition;
+	UPROPERTY(BlueprintReadWrite, Category = "Reticle", meta = (AllowPrivateAccess = "true"))
+	FVector2D ReticleEastTargetPosition;
+	UPROPERTY(BlueprintReadWrite, Category = "Reticle", meta = (AllowPrivateAccess = "true"))
+	FVector2D ReticleWestTargetPosition;
+
 	////////////////////////////////////
 	/** UI category */
 	/** Set in the derived blueprint */
 	UPROPERTY(EditDefaultsOnly, Category = UI)
 	UMaterialInterface* ParentDotMaterial;
+
+	/** Maximum position offset of each part of the reticle when accuracy decreases. */
+	UPROPERTY(EditDefaultsOnly, Category = Reticle)
+	float MaxReticleSlateUnitOffset;
+
+	/** Speed to interpolate reticle positions when adjusting for accuracy. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Reticle, meta = (AllowPrivateAccess = "true"))
+	float ReticleInterpolationSpeed;
 	////////////////////////////////////
 };
