@@ -28,8 +28,8 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
 	// set our turn rates for input
-	BaseTurnRate = 45.f * 2.f;
-	BaseLookUpRate = 45.f * 2.f;
+	BaseTurnRate = 45.f * 1.5f;
+	BaseLookUpRate = 45.f * 1.5f;
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -523,30 +523,32 @@ void AUnrealSFASCharacter::FireWeapon()
 
 						FHitResult hit;
 						TArray<AActor*> ignoredActors;
+						auto traceStart = cameraLoc;
+						auto traceEnd = traceStart + (cameraForward * Weapon->GetShotMaxRange());
 
-						// Calculate and apply accuracy offset to the trace end point.
-						auto deviation = FMath::GetMappedRangeValueClamped(
+						// Calculate and apply deviationScale to the trace end point.
+						auto deviationScale = FMath::GetMappedRangeValueClamped(
 							FVector2D(0.f, GetCharacterMovement()->MaxWalkSpeed * MovingAccuracyDecreaseScale),
 							FVector2D(0.f, Weapon->GetMaximumDeviation()),
 							Accuracy
 						);
-						GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Cyan, FString::Printf(TEXT("mappedAccuracy: %f"), deviation));
 
-						auto traceEndLocation = cameraLoc + (cameraForward * Weapon->GetShotMaxRange());
+						auto deviationDirection = UKismetMathLibrary::RotateAngleAxis(
+							UKismetMathLibrary::Cross_VectorVector(cameraForward, FollowCamera->GetUpVector()),
+							UKismetMathLibrary::RandomFloatInRange(0.f, 359.f),
+							cameraForward);
 
-						//UKismetMathLibrary::RandomFloatInRange(-deviation, deviation)
-						// Deviate end point
-						// Offset in random 2D direction away from traceEndLocation
+						traceEnd += deviationDirection * deviationScale;
 
 						// Trace in the ECC_Visibility channel for any actor except for self.
 						if (UKismetSystemLibrary::LineTraceSingle(
 							world,
-							cameraLoc,
-							traceEndLocation,
+							traceStart,
+							traceEnd,
 							UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility),
 							false,
 							ignoredActors,
-							EDrawDebugTrace::ForDuration,
+							EDrawDebugTrace::None,
 							hit,
 							true))
 						{
