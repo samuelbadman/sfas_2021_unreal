@@ -28,8 +28,8 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
 	// set our turn rates for input
-	BaseTurnRate = 45.f * 1.5f;
-	BaseLookUpRate = 45.f * 1.5f;
+	BaseTurnRate = 45.f * 1.75f;
+	BaseLookUpRate = 45.f * 1.75f;
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -108,6 +108,7 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	NumberOfEnemiesDefeated = 0;
 	DamageDealt = 0;
 	Accuracy = 0.f;
+	Reloading = false;
 
 	BulletImpactSound = nullptr;
 	DefeatedSound = nullptr;
@@ -135,8 +136,6 @@ void AUnrealSFASCharacter::BeginPlay()
 			TargetViewPitchMax = DefaultViewMaxPitch;
 		}
 	}
-
-	SpawnWeapon();
 }
 
 void AUnrealSFASCharacter::Tick(float DeltaTime)
@@ -192,6 +191,15 @@ void AUnrealSFASCharacter::SpawnWeapon()
 				// Setup weapon
 				Weapon->SetActorEnableCollision(false);
 				Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, WeaponSocketName);
+
+				// Update game ui
+				auto* sfasPC = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+				auto* gameUI = sfasPC->GetGameUI();
+				if (gameUI)
+				{
+					gameUI->SetWeaponRoundsRemaining(Weapon->GetRoundsRemaining());
+					gameUI->SetWeaponClipSize(Weapon->GetClipCapacity());
+				}
 			}
 		}
 	}
@@ -260,6 +268,30 @@ void AUnrealSFASCharacter::SwapAimingShoulder()
 		if (Weapon)
 		{
 			Weapon->SetActorRelativeScale3D(FVector(1.f, 1.f, 1.f));
+		}
+	}
+}
+
+void AUnrealSFASCharacter::ReloadWeapon()
+{
+	// Check the character is not currently reloading.
+	if (!Reloading)
+	{
+		// Check the weapon is valid.
+		if (Weapon)
+		{
+			// Check the weapon clip is not currently full.
+			if (!Weapon->IsClipFull())
+			{
+				// Check the weapon's reload montage is valid.
+				auto* reloadMontage = Weapon->GetReloadAnimMontage();
+				if (reloadMontage)
+				{
+					Reloading = true;
+
+					PlayAnimMontage(reloadMontage);
+				}
+			}
 		}
 	}
 }
@@ -350,6 +382,20 @@ void AUnrealSFASCharacter::UpdateHitpointsUI()
 	}
 }
 
+void AUnrealSFASCharacter::CancelReload()
+{
+	if (Weapon)
+	{
+		auto* reloadMontage = Weapon->GetReloadAnimMontage();
+		if (reloadMontage)
+		{
+			StopAnimMontage(reloadMontage);
+		}
+	}
+
+	Reloading = false;
+}
+
 void AUnrealSFASCharacter::RecieveDamage(int Amount)
 {
 	// Check the world is valid.
@@ -388,6 +434,32 @@ void AUnrealSFASCharacter::RecieveDamage(int Amount)
 	UpdateHitpointsUI();
 }
 
+void AUnrealSFASCharacter::OnFinishedReload()
+{
+	if (Weapon)
+	{
+		// Insert a new clip into the weapon.
+		Weapon->NewClip();
+
+		// Update game UI
+		auto* world = GetWorld();
+		if (world)
+		{
+			auto* sfasPC = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+			auto* gameUI = sfasPC->GetGameUI();
+			if (gameUI)
+			{
+				gameUI->SetWeaponRoundsRemaining(Weapon->GetRoundsRemaining());
+
+				// Hide reload prompt.
+				gameUI->ShowReloadPrompt(false);
+			}
+		}
+	}
+
+	Reloading = false;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -395,12 +467,13 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 {
 	// Set up gameplay key bindings
 	check(PlayerInputComponent);
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AUnrealSFASCharacter::JumpPressed);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AUnrealSFASCharacter::AimWeapon);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AUnrealSFASCharacter::StopAimingWeapon);
 	PlayerInputComponent->BindAction("FireWeapon", IE_Pressed, this, &AUnrealSFASCharacter::FireWeapon);
 	PlayerInputComponent->BindAction("SwapShoulder", IE_Pressed, this, &AUnrealSFASCharacter::SwapShoulder);
+	PlayerInputComponent->BindAction("ReloadWeapon", IE_Pressed, this, &AUnrealSFASCharacter::ReloadWeapon);
 
 	// Bind the pause action method. Allow execution when the game is paused.
 	FInputActionBinding& pauseBinding = PlayerInputComponent->BindAction("Pause", IE_Pressed, this, &AUnrealSFASCharacter::PausePressed);
@@ -440,6 +513,17 @@ void AUnrealSFASCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector L
 		StopJumping();
 }
 
+void AUnrealSFASCharacter::JumpPressed()
+{
+	// Cancel the reload if one is in progress.
+	if (Reloading)
+	{
+		CancelReload();
+	}
+
+	Jump();
+}
+
 void AUnrealSFASCharacter::AimWeapon()
 {
 	Aiming = true;
@@ -477,28 +561,29 @@ void AUnrealSFASCharacter::StopAimingWeapon()
 void AUnrealSFASCharacter::FireWeapon()
 {
 	// Is the player aiming and the weapon reference is valid?
-	if (Aiming && (Weapon != nullptr))
+	if (Aiming && !Reloading && (Weapon != nullptr))
 	{
 		// Is the world valid?
 		auto* world = GetWorld();
 		if (world)
 		{
-			// Has enough game time elapsed since the last shot?
-			const float currentGameSeconds = UKismetSystemLibrary::GetGameTimeInSeconds(world);
-			if ((currentGameSeconds - GameSecondsAtLastShot) > Weapon->GetShotRecoverTime())
+			// Check the weapon has rounds left in its clip.
+			if (!Weapon->IsClipEmpty())
 			{
-				// Is the camera manager reference vallid?
-				if (CameraManager)
+				// Has enough game time elapsed since the last shot?
+				const float currentGameSeconds = UKismetSystemLibrary::GetGameTimeInSeconds(world);
+				if ((currentGameSeconds - GameSecondsAtLastShot) > Weapon->GetShotRecoverTime())
 				{
-					GameSecondsAtLastShot = currentGameSeconds;
-
-					auto cameraLoc = CameraManager->GetCameraLocation();
-					auto cameraForward = CameraManager->GetActorForwardVector();
-
-					// Play the weapon shot effects.
-					if (Weapon)
+					// Is the camera manager reference vallid?
+					if (CameraManager)
 					{
-						// Play the weapon shot animation montage.
+						GameSecondsAtLastShot = currentGameSeconds;
+
+						auto cameraLoc = CameraManager->GetCameraLocation();
+						auto cameraForward = CameraManager->GetActorForwardVector();
+
+						// Play the weapon shot effects.
+							// Play the weapon shot animation montage.
 						auto* montage = Weapon->GetShotAnimMontage();
 						if (montage)
 						{
@@ -576,7 +661,35 @@ void AUnrealSFASCharacter::FireWeapon()
 								}
 							}
 						}
+
+						// Remove a round from the current clip of the weapon.
+						Weapon->RemoveRound();
+
+						// Update the game ui.
+						auto* sfasPC = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+						auto* gameUI = sfasPC->GetGameUI();
+						if (gameUI)
+						{
+							gameUI->SetWeaponRoundsRemaining(Weapon->GetRoundsRemaining());
+
+							// Show reload prompt if weapon clip is empty.
+							if (Weapon->IsClipEmpty())
+							{
+								// Should the character auto reload when the weapon clip is empty?
+								//gameUI->ShowReloadPrompt(true);
+								ReloadWeapon();
+							}
+						}
 					}
+				}
+			}
+			else
+			{
+				// Play empty clip sound.
+				auto* emptySound = Weapon->GetEmptyFireSound();
+				if (emptySound)
+				{
+					UGameplayStatics::PlaySoundAtLocation(world, emptySound, GetActorLocation());
 				}
 			}
 		}

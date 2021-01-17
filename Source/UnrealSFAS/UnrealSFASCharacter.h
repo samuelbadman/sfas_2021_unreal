@@ -38,10 +38,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Damage)
 	void RecieveDamage(int Amount);
 
+	/** Notifies the character that the reload animation has finished. */
+	UFUNCTION(BlueprintCallable, Category = Reload)
+	void OnFinishedReload();
+
+	/** Spawns a weapon and updates the UI display with its information. */
+	void SpawnWeapon();
+
 	FORCEINLINE int GetHitpoints() const { return Hitpoints; }
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = Damage)
 	FORCEINLINE bool GetDefeated() const { return Defeated; }
+
+	UFUNCTION(BlueprintCallable, Category = Weapon)
+	FORCEINLINE class AWeapon* GetWeapon() const { return Weapon; }
 
 protected:
 
@@ -71,6 +81,9 @@ protected:
 
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
+
+	/** Called when the jump button is pressed. */
+	void JumpPressed();
 
 	/** Put's the player character into the aiming state. */
 	void AimWeapon();
@@ -111,13 +124,13 @@ public:
 	FORCEINLINE float GetAimBlendWeight() const { return AimBlendWeight; }
 
 private:
-	void SpawnWeapon();
-
 	void UpdateCameraZoom(const float DeltaTime);
 	void UpdateCameraLocationOffset(const float DeltaTime);
 	void UpdateViewPitch(const float DeltaTime);
 
 	void SwapAimingShoulder();
+
+	void ReloadWeapon();
 
 	void PausePressed();
 
@@ -129,6 +142,9 @@ private:
 
 	/** Updates the player's hitpoint value in the UI display. */
 	void UpdateHitpointsUI();
+
+	/** Cancels the reload in progress, leaving the weapon magazine in the same state. */
+	void CancelReload();
 
 private:
 	float TargetBoomLength;
@@ -155,6 +171,8 @@ private:
 
 	int NumberOfEnemiesDefeated;
 	int DamageDealt;
+
+	bool Reloading;
 
 	///////////////////////////////////////////////////
 	/** Weapon category */

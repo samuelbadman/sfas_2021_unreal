@@ -45,6 +45,15 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Reticle")
 	void InterpReticleToTargetPosition(float DeltaTime);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
+	void SetWeaponRoundsRemaining(int RoundsRemaining);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
+	void SetWeaponClipSize(int ClipSize);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
+	void ShowReloadPrompt(bool Show);
+
 	FORCEINLINE float GetMaxReticleSlateUnitOffset() const { return MaxReticleSlateUnitOffset; }
 
 protected:

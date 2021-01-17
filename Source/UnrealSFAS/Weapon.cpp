@@ -22,6 +22,7 @@ AWeapon::AWeapon()
 
 	// Set default member values
 	ShotAnimMontage = nullptr;
+	ReloadAnimMontage = nullptr;
 	ShotRecoverTime = 0.15f;
 	ShotMaxRange = 1000.0f;
 	MinDamage = 1;
@@ -29,6 +30,26 @@ AWeapon::AWeapon()
 	FireSound = nullptr;
 	MuzzleFlashEmitterTemplate = nullptr;
 	MaximumDeviation = 50.f;
+	ClipSize = 8;
+	CurrentRounds = 0;
+}
+
+void AWeapon::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Set the current rounds in the clip to be the max clip size.
+	CurrentRounds = ClipSize;
+}
+
+void AWeapon::RemoveRound()
+{
+	CurrentRounds--;
+}
+
+void AWeapon::NewClip()
+{
+	CurrentRounds = ClipSize;
 }
 
 

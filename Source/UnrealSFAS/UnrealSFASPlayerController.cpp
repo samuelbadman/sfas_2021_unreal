@@ -33,6 +33,9 @@ void AUnrealSFASPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Get the controlled pawn as an AUnrealSFASCharacter
+	auto* unrealSFASCharacter = CastChecked<AUnrealSFASCharacter>(GetPawn());
+
 	// Spawn game user interface
 	// Check the game ui class is valid
 	if (GameUIClass)
@@ -52,11 +55,11 @@ void AUnrealSFASPlayerController::BeginPlay()
 			auto* gameMode = CastChecked<AUnrealSFASGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
 			GameUI->SetWaveNumber(gameMode->GetCurrentWaveNumber());
 
-			auto* unrealSFASCharacter = CastChecked<AUnrealSFASCharacter>(GetPawn());
 			GameUI->SetHitpointsValue(unrealSFASCharacter->GetHitpoints());
 		}
 	}
 
+	// Spawn pause user interface.
 	// Check the pause ui class is valid.
 	if (PauseUserWidgetClass)
 	{
@@ -72,6 +75,9 @@ void AUnrealSFASPlayerController::BeginPlay()
 			PauseUI->Show(false);
 		}
 	}
+
+	// Spawn a weapon for the possessed character.
+	unrealSFASCharacter->SpawnWeapon();
 }
 
 void AUnrealSFASPlayerController::SpawnGameOverUI(int EnemiesDefeated, int TotalDamageDealt)

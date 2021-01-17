@@ -1,0 +1,23 @@
+timgormly 8-bit Machine Gun.aif 
+source: https://freesound.org/people/timgormly/sounds/170167/
+License: https://creativecommons.org/licenses/by/3.0/
+
+NoiseCollector bulletimpact_metal2.wav
+source: https://freesound.org/people/NoiseCollector/sounds/237437/
+License: https://creativecommons.org/licenses/by/3.0/
+
+Zangrutz Bomb-Small
+source: https://freesound.org/people/Zangrutz/sounds/155235/
+License: https://creativecommons.org/licenses/by/3.0/
+
+joshuaempyre Arcade Music Loop
+source: https://freesound.org/people/joshuaempyre/sounds/251461/
+License: https://creativecommons.org/licenses/by/3.0/
+
+SilverIllusionist Healing 2(Tranquillity).wav
+source: https://freesound.org/people/SilverIllusionist/sounds/518800/
+License: https://creativecommons.org/licenses/by/3.0/
+
+fastson MagazineRelease01.wav
+source: https://freesound.org/people/fastson/sounds/399122/
+License: https://creativecommons.org/licenses/by/3.0/
