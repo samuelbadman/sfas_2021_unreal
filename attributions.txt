@@ -10,10 +10,6 @@ Zangrutz Bomb-Small
 source: https://freesound.org/people/Zangrutz/sounds/155235/
 License: https://creativecommons.org/licenses/by/3.0/
 
-joshuaempyre Arcade Music Loop
-source: https://freesound.org/people/joshuaempyre/sounds/251461/
-License: https://creativecommons.org/licenses/by/3.0/
-
 SilverIllusionist Healing 2(Tranquillity).wav
 source: https://freesound.org/people/SilverIllusionist/sounds/518800/
 License: https://creativecommons.org/licenses/by/3.0/
