@@ -168,7 +168,9 @@ void AUnrealSFASGameMode::StartWave(int WaveNumber)
 				FVector randomLoc = UKismetMathLibrary::RandomPointInBoundingBox(enemySpawnVolumeBox->GetComponentLocation(), enemySpawnVolumeBox->GetUnscaledBoxExtent());
 
 				// Spawn the enemy at the found location.
-				auto* spawnedEnemy = world->SpawnActor<ADroneCharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator);
+				FActorSpawnParameters spawnParams;
+				spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+				auto* spawnedEnemy = world->SpawnActor<ADroneCharacter>(EnemyCharacterClass.Get(), randomLoc, FRotator::ZeroRotator, spawnParams);
 
 				// Check the enemy was spawned succesfully.
 				if (spawnedEnemy)
