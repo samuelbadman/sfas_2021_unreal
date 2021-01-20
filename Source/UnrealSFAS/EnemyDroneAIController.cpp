@@ -10,7 +10,7 @@ AEnemyDroneAIController::AEnemyDroneAIController()
 {
 	// Setup AI sight perception configuration
 	AiSightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("AIConfigSight"));
-	AiSightConfig->PeripheralVisionAngleDegrees = 40.f;
+	AiSightConfig->PeripheralVisionAngleDegrees = 75.f;
 	AiSightConfig->SightRadius = 2000.f;
 	AiSightConfig->LoseSightRadius = 3000.f;
 	AiSightConfig->DetectionByAffiliation.bDetectEnemies = true;
@@ -59,11 +59,17 @@ void AEnemyDroneAIController::OnPerceptionUpdate(AActor* Actor, FAIStimulus Stim
 		{
 			// Set can see player to true
 			GetBlackboardComponent()->SetValueAsBool(CanSeePlayerBlackboardValueName, true);
+
+			// Set reference to the seen object
+			GetBlackboardComponent()->SetValueAsObject(TargetBlackboardValueName, Actor);
 		}
 		else
 		{
 			// Set can see player to false
 			GetBlackboardComponent()->SetValueAsBool(CanSeePlayerBlackboardValueName, false);
+
+			// Set target to null
+			GetBlackboardComponent()->SetValueAsObject(TargetBlackboardValueName, nullptr);
 		}
 	}
 }

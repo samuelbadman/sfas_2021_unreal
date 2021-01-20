@@ -15,9 +15,6 @@ class UNREALSFAS_API UGameOverUserWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	UFUNCTION(BlueprintCallable, Category = "Game Over UI")
-	void OnReturnToMenuClicked();
-
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetEnemiesDefeatedText(int EnemiesDefeated);
 
@@ -27,8 +24,6 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetDamageDealtText(int Damage);
 
-private:
-	/** Set in the derived blueprint. */
-	UPROPERTY(EditDefaultsOnly, Category = "Game Over UI", meta = (AllowPrivateAccess = "true"))
-	FName MainMenuLevelName;
+	UFUNCTION(BlueprintImplementableEvent)
+	void ShowReturnPrompt();
 };

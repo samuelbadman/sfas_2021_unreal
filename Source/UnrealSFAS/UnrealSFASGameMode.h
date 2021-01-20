@@ -20,6 +20,9 @@ public:
 	/** Updates the round when a drone is destroyed. */
 	void NotifyDroneDestroyed();
 
+	/** Handles updating the game state when a player is defeated. */
+	void OnPlayerDefeated();
+
 protected:
 	void BeginPlay() override;
 
@@ -59,6 +62,12 @@ private:
 private:
 	/** The spawn volume instance used to spawn enemies in. */
 	class ASpawnVolume* EnemySpawnVolume;
+
+	/** The number of players left remaining in the game. */
+	int PlayersRemaining;
+
+	/** The number of players who started the game. */
+	int StartingNumberOfPlayers;
 
 	//////////////////////////////////
 	/** Enemies category */

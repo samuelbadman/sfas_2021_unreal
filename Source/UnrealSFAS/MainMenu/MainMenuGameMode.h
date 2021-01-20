@@ -16,4 +16,14 @@ class UNREALSFAS_API AMainMenuGameMode : public AGameModeBase
 	
 public:
 	AMainMenuGameMode();
+
+	FORCEINLINE AActor* GetSecondPlayerActor() const { return SecondPlayerActor; }
+	FORCEINLINE class UMainMenuUserWidget* GetMainMenuWidget() const { return MainMenuWidget; }
+
+protected:
+	void BeginPlay() override;
+
+private:
+	AActor* SecondPlayerActor;
+	class UMainMenuUserWidget* MainMenuWidget;
 };

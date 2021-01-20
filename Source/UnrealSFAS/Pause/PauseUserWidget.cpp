@@ -2,17 +2,3 @@
 
 
 #include "PauseUserWidget.h"
-#include "Kismet/GameplayStatics.h"
-#include "../UnrealSFASPlayerController.h"
-
-void UPauseUserWidget::OnResumeGameButtonClicked()
-{
-	auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-	unrealSFASPlayerController->PauseGame(false);
-}
-
-void UPauseUserWidget::OnExitToMainMenuButtonClicked()
-{
-	// Open the main menu level.
-	UGameplayStatics::OpenLevel(GetWorld(), MainMenuLevelName);
-}

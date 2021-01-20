@@ -17,15 +17,4 @@ class UNREALSFAS_API UPauseUserWidget : public UUserWidget
 public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void Show(bool Show);
-
-	UFUNCTION(BlueprintCallable)
-	void OnResumeGameButtonClicked();
-
-	UFUNCTION(BlueprintCallable)
-	void OnExitToMainMenuButtonClicked();
-
-private:
-	/** Set in the derived blueprint. */
-	UPROPERTY(EditDefaultsOnly, Category = "Game Over UI", meta = (AllowPrivateAccess = "true"))
-	FName MainMenuLevelName;
 };

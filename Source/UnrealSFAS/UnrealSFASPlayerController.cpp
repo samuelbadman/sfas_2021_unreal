@@ -27,15 +27,12 @@ AUnrealSFASPlayerController::AUnrealSFASPlayerController()
 	PauseUI = nullptr;
 	PauseUserWidgetClass = nullptr;
 	Paused = false;
+	PlayerIndex = 0;
+	PlayerIndexWhoPaused = -1;
 }
 
-void AUnrealSFASPlayerController::BeginPlay()
+void AUnrealSFASPlayerController::SpawnGameUI(AUnrealSFASCharacter* unrealSFASCharacter)
 {
-	Super::BeginPlay();
-
-	// Get the controlled pawn as an AUnrealSFASCharacter
-	auto* unrealSFASCharacter = CastChecked<AUnrealSFASCharacter>(GetPawn());
-
 	// Spawn game user interface
 	// Check the game ui class is valid
 	if (GameUIClass)
@@ -46,7 +43,7 @@ void AUnrealSFASPlayerController::BeginPlay()
 		if (GameUI)
 		{
 			// Show the ui
-			GameUI->AddToViewport();
+			GameUI->AddToPlayerScreen();
 
 			// Set input mode to only the game
 			SetInputMode(FInputModeGameOnly());
@@ -69,15 +66,12 @@ void AUnrealSFASPlayerController::BeginPlay()
 		if (PauseUI)
 		{
 			// Add the UI.
-			PauseUI->AddToViewport();
+			PauseUI->AddToPlayerScreen();
 
 			// Hide the pause menu.
 			PauseUI->Show(false);
 		}
 	}
-
-	// Spawn a weapon for the possessed character.
-	unrealSFASCharacter->SpawnWeapon();
 }
 
 void AUnrealSFASPlayerController::SpawnGameOverUI(int EnemiesDefeated, int TotalDamageDealt)
@@ -104,7 +98,7 @@ void AUnrealSFASPlayerController::SpawnGameOverUI(int EnemiesDefeated, int Total
 				GameOverUI->SetWavesSurvivedText(unrealSFASGameMode->GetCurrentWaveNumber() - 1);
 			}
 
-			GameOverUI->AddToViewport();
+			GameOverUI->AddToPlayerScreen();
 		}
 	}
 }
@@ -124,9 +118,8 @@ void AUnrealSFASPlayerController::PauseGame(bool Pause)
 		// Pause the game
 		SetPause(true);
 
-		// Set input mode to game and ui.
-		SetInputMode(FInputModeGameAndUI());
-		bShowMouseCursor = true;
+		// Set input mode to game only.
+		SetInputMode(FInputModeGameOnly());
 	}
 	else
 	{
@@ -141,11 +134,38 @@ void AUnrealSFASPlayerController::PauseGame(bool Pause)
 
 		// Set input mode to game only.
 		SetInputMode(FInputModeGameOnly());
-		bShowMouseCursor = false;
 	}
 }
 
 void AUnrealSFASPlayerController::TogglePause()
 {
-	PauseGame(!Paused);
+	if (IsPaused())
+	{
+		if (PlayerIndex == PlayerIndexWhoPaused)
+		{
+			PauseGame(!Paused);
+			PlayerIndexWhoPaused = -1;
+		}
+	}
+	else
+	{
+		PauseGame(!Paused);
+		PlayerIndexWhoPaused = PlayerIndex;
+	}
+}
+
+void AUnrealSFASPlayerController::SetPlayerIndex(int32 Index)
+{
+	PlayerIndex = Index;
+}
+
+void AUnrealSFASPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	auto* unrealSFASCharacter = CastChecked<AUnrealSFASCharacter>(InPawn);
+	unrealSFASCharacter->SetPlayerIndex(PlayerIndex);
+	SpawnGameUI(unrealSFASCharacter);
+	unrealSFASCharacter->SpawnWeapon(GameUI);
+	unrealSFASCharacter->SetupOnPossessed();
 }

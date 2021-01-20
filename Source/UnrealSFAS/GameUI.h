@@ -54,6 +54,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
 	void ShowReloadPrompt(bool Show);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game UI")
+	void PlayImpactAnim();
+
 	FORCEINLINE float GetMaxReticleSlateUnitOffset() const { return MaxReticleSlateUnitOffset; }
 
 protected:

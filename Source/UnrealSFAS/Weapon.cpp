@@ -31,7 +31,7 @@ AWeapon::AWeapon()
 	MuzzleFlashEmitterTemplate = nullptr;
 	MaximumDeviation = 50.f;
 	ClipSize = 8;
-	CurrentRounds = 0;
+	CurrentRounds = ClipSize;
 }
 
 void AWeapon::BeginPlay()

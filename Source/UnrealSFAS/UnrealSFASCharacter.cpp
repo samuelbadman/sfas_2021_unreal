@@ -18,6 +18,7 @@
 #include "GameUI.h"
 #include "DroneCharacter.h"
 #include "Pause/PauseUserWidget.h"
+#include "UnrealSFASGameMode.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUnrealSFASCharacter
@@ -28,8 +29,9 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
 	// set our turn rates for input
-	BaseTurnRate = 45.f * 1.75f;
-	BaseLookUpRate = 45.f * 1.75f;
+	const float sensitivityScale = 0.95f;
+	BaseTurnRate = 45.f * sensitivityScale;
+	BaseLookUpRate = 45.f * sensitivityScale;
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
@@ -83,6 +85,10 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	GetMesh()->SetRenderCustomDepth(true);
 	GetMesh()->SetCustomDepthStencilValue(3);
 
+	// Disable camera collision with the player.
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+
 	// Set default member values
 	CameraZoomSpeed = 4.f;
 	CameraMoveSpeed = 4.f;
@@ -113,6 +119,10 @@ AUnrealSFASCharacter::AUnrealSFASCharacter()
 	BulletImpactSound = nullptr;
 	DefeatedSound = nullptr;
 	HealingSound = nullptr;
+
+	PlayerIndex = 0;
+
+	CanReturnToMainMenu = false;
 }
 
 void AUnrealSFASCharacter::BeginPlay()
@@ -122,20 +132,6 @@ void AUnrealSFASCharacter::BeginPlay()
 	// Register AI stimuli source as a sight source
 	AiStimuliSource->bAutoRegister = true;
 	AiStimuliSource->RegisterForSense(UAISense_Sight::StaticClass());
-
-	// Store default view min and max pitches
-	auto* world = GetWorld();
-	if (world)
-	{
-		CameraManager = UGameplayStatics::GetPlayerCameraManager(world, 0);
-		if (CameraManager)
-		{
-			DefaultViewMinPitch = CameraManager->ViewPitchMin;
-			DefaultViewMaxPitch = CameraManager->ViewPitchMax;
-			TargetViewPitchMin = DefaultViewMinPitch;
-			TargetViewPitchMax = DefaultViewMaxPitch;
-		}
-	}
 }
 
 void AUnrealSFASCharacter::Tick(float DeltaTime)
@@ -150,16 +146,22 @@ void AUnrealSFASCharacter::Tick(float DeltaTime)
 	Accuracy = GetVelocity().Size() * MovingAccuracyDecreaseScale;
 
 	// Update the reticle UI to reflect weapon accuracy.
-	static auto* world = GetWorld();
+	auto* world = GetWorld();
 	if (world)
 	{
-		auto* pc = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-		auto* gameUI = pc->GetGameUI();
-		gameUI->UpdateReticleTargetPosition(FMath::GetMappedRangeValueClamped(
-			FVector2D(0.f, GetCharacterMovement()->MaxWalkSpeed * MovingAccuracyDecreaseScale),
-			FVector2D(0.f, gameUI->GetMaxReticleSlateUnitOffset()), 
-			Accuracy));
-		gameUI->InterpReticleToTargetPosition(DeltaTime);
+		auto* unrealSFASController = Cast<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, PlayerIndex));
+		if (unrealSFASController)
+		{
+			auto* gameUI = unrealSFASController->GetGameUI();
+			if (gameUI)
+			{
+				gameUI->UpdateReticleTargetPosition(FMath::GetMappedRangeValueClamped(
+					FVector2D(0.f, GetCharacterMovement()->MaxWalkSpeed * MovingAccuracyDecreaseScale),
+					FVector2D(0.f, gameUI->GetMaxReticleSlateUnitOffset()),
+					Accuracy));
+				gameUI->InterpReticleToTargetPosition(DeltaTime);
+			}
+		}
 	}
 
 	// Force follow camera to look at the capsule component when the player has been defeated.
@@ -174,7 +176,7 @@ float AUnrealSFASCharacter::GetPitchOffset() const
 	return UKismetMathLibrary::NormalizedDeltaRotator(GetControlRotation(), GetActorRotation()).Pitch;
 }
 
-void AUnrealSFASCharacter::SpawnWeapon()
+void AUnrealSFASCharacter::SpawnWeapon(UGameUI* GameUI)
 {
 	// Is the default weapon class valid?
 	if (DefaultWeaponClass)
@@ -183,7 +185,9 @@ void AUnrealSFASCharacter::SpawnWeapon()
 		auto* world = GetWorld();
 		if (world)
 		{
-			Weapon = world->SpawnActor<AWeapon>(DefaultWeaponClass.Get());
+			FActorSpawnParameters spawnParams;
+			spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+			Weapon = world->SpawnActor<AWeapon>(DefaultWeaponClass.Get(), spawnParams);
 
 			// Did the weapon spawn correctly?
 			if (Weapon)
@@ -193,12 +197,10 @@ void AUnrealSFASCharacter::SpawnWeapon()
 				Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, WeaponSocketName);
 
 				// Update game ui
-				auto* sfasPC = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
-				auto* gameUI = sfasPC->GetGameUI();
-				if (gameUI)
+				if (GameUI)
 				{
-					gameUI->SetWeaponRoundsRemaining(Weapon->GetRoundsRemaining());
-					gameUI->SetWeaponClipSize(Weapon->GetClipCapacity());
+					GameUI->SetWeaponRoundsRemaining(Weapon->GetRoundsRemaining());
+					GameUI->SetWeaponClipSize(Weapon->GetClipCapacity());
 				}
 			}
 		}
@@ -298,8 +300,37 @@ void AUnrealSFASCharacter::ReloadWeapon()
 
 void AUnrealSFASCharacter::PausePressed()
 {
-	auto* UnrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
-	UnrealSFASPlayerController->TogglePause();
+	auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
+	unrealSFASPlayerController->TogglePause();
+}
+
+void AUnrealSFASCharacter::PositiveMenuInputPressed()
+{
+
+}
+
+void AUnrealSFASCharacter::NegativeMenuInputPressed()
+{
+	if (IsGamePaused())
+	{
+		ReturnToMainMenu();
+	}
+
+	if (Defeated && CanReturnToMainMenu)
+	{
+		ReturnToMainMenu();
+	}
+}
+
+bool AUnrealSFASCharacter::IsGamePaused() const
+{
+	auto* unrealSFASPlayerController = Cast<AUnrealSFASPlayerController>(Controller);
+	if (unrealSFASPlayerController)
+	{
+		return unrealSFASPlayerController->IsPaused();
+	}
+
+	return false;
 }
 
 void AUnrealSFASCharacter::ShowHitMarker()
@@ -333,6 +364,12 @@ void AUnrealSFASCharacter::OnPlayerDefeated()
 		// Stop the character moving.
 		GetCharacterMovement()->MaxWalkSpeed = 0.f;
 
+		// Disable collision with the player capsule.
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		// Unregister the player from the AI sight sense.
+		AiStimuliSource->UnregisterFromSense(UAISense_Sight::StaticClass());
+
 		// Check the world is valid.
 		auto* world = GetWorld();
 		if (world)
@@ -343,29 +380,21 @@ void AUnrealSFASCharacter::OnPlayerDefeated()
 				UGameplayStatics::PlaySoundAtLocation(world, DefeatedSound, GetActorLocation());
 			}
 
-			// Check player controller is valid.
-			auto* playerController = UGameplayStatics::GetPlayerController(world, 0);
-			if (playerController)
-			{
-				// Cast to the player controller.
-				auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
+			// Cast to the player controller.
+			auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, PlayerIndex));
 
-				// Set input mode to UI input only.
-				playerController->SetInputMode(FInputModeUIOnly());
+			// Set input mode to game input only.
+			unrealSFASPlayerController->SetInputMode(FInputModeGameOnly());
 
-				// Show the mouse cursor.
-				playerController->bShowMouseCursor = true;
+			// Hide the game UI.
+			unrealSFASPlayerController->GetGameUI()->Show(false);
 
-				// Check the player controller cast correctly.
-				if (unrealSFASPlayerController)
-				{
-					// Hide the game UI.
-					unrealSFASPlayerController->GetGameUI()->Show(false);
+			// Show the game over UI.
+			unrealSFASPlayerController->SpawnGameOverUI(NumberOfEnemiesDefeated, DamageDealt);
 
-					// Show the game over UI.
-					unrealSFASPlayerController->SpawnGameOverUI(NumberOfEnemiesDefeated, DamageDealt);
-				}
-			}
+			// Notify the game mode a player has been defeated.
+			auto* unrealSFASGameMode = CastChecked<AUnrealSFASGameMode>(UGameplayStatics::GetGameMode(world));
+			unrealSFASGameMode->OnPlayerDefeated();
 		}
 	}
 }
@@ -377,7 +406,7 @@ void AUnrealSFASCharacter::UpdateHitpointsUI()
 	if (world)
 	{
 		// Set the new HP value.
-		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, PlayerIndex));
 		unrealSFASPlayerController->GetGameUI()->SetHitpointsValue(Hitpoints);
 	}
 }
@@ -394,6 +423,21 @@ void AUnrealSFASCharacter::CancelReload()
 	}
 
 	Reloading = false;
+}
+
+void AUnrealSFASCharacter::ReturnToMainMenu()
+{
+	// Return to the main menu
+	const FName mainMenuLevelName = "MainMenu";
+	auto* world = GetWorld();
+	if (world)
+	{
+		// Remove the second player.
+		UGameplayStatics::RemovePlayer(UGameplayStatics::GetPlayerController(GetWorld(), 1), true);
+
+		// Open the main menu level.
+		UGameplayStatics::OpenLevel(world, mainMenuLevelName);
+	}
 }
 
 void AUnrealSFASCharacter::RecieveDamage(int Amount)
@@ -417,6 +461,14 @@ void AUnrealSFASCharacter::RecieveDamage(int Amount)
 			if (BulletImpactSound)
 			{
 				UGameplayStatics::PlaySoundAtLocation(world, BulletImpactSound, GetActorLocation());
+			}
+
+			// Play impact UI animation.
+			auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, PlayerIndex));
+			auto* gameUI = unrealSFASPlayerController->GetGameUI();
+			if (gameUI)
+			{
+				gameUI->PlayImpactAnim();
 			}
 		}
 	}
@@ -445,7 +497,7 @@ void AUnrealSFASCharacter::OnFinishedReload()
 		auto* world = GetWorld();
 		if (world)
 		{
-			auto* sfasPC = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+			auto* sfasPC = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, PlayerIndex));
 			auto* gameUI = sfasPC->GetGameUI();
 			if (gameUI)
 			{
@@ -479,6 +531,13 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	FInputActionBinding& pauseBinding = PlayerInputComponent->BindAction("Pause", IE_Pressed, this, &AUnrealSFASCharacter::PausePressed);
 	pauseBinding.bExecuteWhenPaused = true;
 
+	// Bind the menu action methods. Allow execution when the game is paused.
+	FInputActionBinding& PositiveMenuBinding = PlayerInputComponent->BindAction("PositiveMenu", IE_Pressed, this, &AUnrealSFASCharacter::PositiveMenuInputPressed);
+	PositiveMenuBinding.bExecuteWhenPaused = true;
+
+	FInputActionBinding& NegativeMenuBinding = PlayerInputComponent->BindAction("NegativeMenu", IE_Pressed, this, &AUnrealSFASCharacter::NegativeMenuInputPressed);
+	NegativeMenuBinding.bExecuteWhenPaused = true;
+
 	PlayerInputComponent->BindAxis("MoveForward", this, &AUnrealSFASCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AUnrealSFASCharacter::MoveRight);
 
@@ -496,6 +555,33 @@ void AUnrealSFASCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AUnrealSFASCharacter::OnResetVR);
+}
+
+void AUnrealSFASCharacter::SetPlayerIndex(int32 Index)
+{
+	PlayerIndex = Index;
+}
+
+void AUnrealSFASCharacter::SetupOnPossessed()
+{
+	// Store default view min and max pitches
+	auto* world = GetWorld();
+	if (world)
+	{
+		CameraManager = UGameplayStatics::GetPlayerCameraManager(world, PlayerIndex);
+		if (CameraManager)
+		{
+			DefaultViewMinPitch = CameraManager->ViewPitchMin;
+			DefaultViewMaxPitch = CameraManager->ViewPitchMax;
+			TargetViewPitchMin = DefaultViewMinPitch;
+			TargetViewPitchMax = DefaultViewMaxPitch;
+		}
+	}
+}
+
+void AUnrealSFASCharacter::SetCanReturnToMainMenu(bool CanReturn)
+{
+	CanReturnToMainMenu = CanReturn;
 }
 
 void AUnrealSFASCharacter::OnResetVR()
@@ -526,36 +612,64 @@ void AUnrealSFASCharacter::JumpPressed()
 
 void AUnrealSFASCharacter::AimWeapon()
 {
-	Aiming = true;
-	TargetBoomLength = AimBoomLength;
-	TargetCameraOffset = CameraAimOffset;
-	AimBlendWeight = 1.f;
-	TargetViewPitchMin = CameraAimMinPitch;
-	TargetViewPitchMax = CameraAimMaxPitch;
-	GetCharacterMovement()->MaxWalkSpeed = AimMaxWalkSpeed;
-	bUseControllerRotationYaw = true;
+	if (!Defeated)
+	{
+		Aiming = true;
+		TargetBoomLength = AimBoomLength;
+		TargetCameraOffset = CameraAimOffset;
+		AimBlendWeight = 1.f;
+		TargetViewPitchMin = CameraAimMinPitch;
+		TargetViewPitchMax = CameraAimMaxPitch;
+		GetCharacterMovement()->MaxWalkSpeed = AimMaxWalkSpeed;
+		bUseControllerRotationYaw = true;
 
-	auto* UnrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
-	UnrealSFASPlayerController->GetGameUI()->SetReticleVisibility(true);
+		auto* world = GetWorld();
+		if (world)
+		{
+			auto* unrealSFASController = Cast<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, PlayerIndex));
+			if (unrealSFASController)
+			{
+				auto* gameUI = unrealSFASController->GetGameUI();
+				if (gameUI)
+				{
+					gameUI->SetReticleVisibility(true);
+				}
+			}
+		}
+	}
 }
 
 void AUnrealSFASCharacter::StopAimingWeapon()
 {
-	Aiming = false;
-	TargetBoomLength = DefaultBoomLength;
-	TargetCameraOffset = FVector::ZeroVector;
-	AimBlendWeight = 0.f;
-	TargetViewPitchMin = DefaultViewMinPitch;
-	TargetViewPitchMax = DefaultViewMaxPitch;
-	GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
-	bUseControllerRotationYaw = false;
-	if (!AimingOverRightShoulder)
+	if (!Defeated)
 	{
-		SwapAimingShoulder();
-	}
+		Aiming = false;
+		TargetBoomLength = DefaultBoomLength;
+		TargetCameraOffset = FVector::ZeroVector;
+		AimBlendWeight = 0.f;
+		TargetViewPitchMin = DefaultViewMinPitch;
+		TargetViewPitchMax = DefaultViewMaxPitch;
+		GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
+		bUseControllerRotationYaw = false;
+		if (!AimingOverRightShoulder)
+		{
+			SwapAimingShoulder();
+		}
 
-	auto* UnrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(Controller);
-	UnrealSFASPlayerController->GetGameUI()->SetReticleVisibility(false);
+		auto* world = GetWorld();
+		if (world)
+		{
+			auto* unrealSFASController = Cast<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, PlayerIndex));
+			if (unrealSFASController)
+			{
+				auto* gameUI = unrealSFASController->GetGameUI();
+				if (gameUI)
+				{
+					gameUI->SetReticleVisibility(false);
+				}
+			}
+		}
+	}
 }
 
 void AUnrealSFASCharacter::FireWeapon()
@@ -578,9 +692,6 @@ void AUnrealSFASCharacter::FireWeapon()
 					if (CameraManager)
 					{
 						GameSecondsAtLastShot = currentGameSeconds;
-
-						auto cameraLoc = CameraManager->GetCameraLocation();
-						auto cameraForward = CameraManager->GetActorForwardVector();
 
 						// Play the weapon shot effects.
 							// Play the weapon shot animation montage.
@@ -605,6 +716,10 @@ void AUnrealSFASCharacter::FireWeapon()
 							UGameplayStatics::SpawnEmitterAttached(muzzleEmitterTemplate, muzzleScene, FName("None"), muzzleScene->GetComponentLocation(),
 								muzzleScene->GetComponentRotation(), EAttachLocation::KeepWorldPosition, true, EPSCPoolMethod::AutoRelease);
 						}
+
+						CameraManager = UGameplayStatics::GetPlayerCameraManager(world, PlayerIndex);
+						auto cameraLoc = CameraManager->GetCameraLocation();
+						auto cameraForward = CameraManager->GetActorForwardVector();
 
 						FHitResult hit;
 						TArray<AActor*> ignoredActors;
@@ -666,7 +781,7 @@ void AUnrealSFASCharacter::FireWeapon()
 						Weapon->RemoveRound();
 
 						// Update the game ui.
-						auto* sfasPC = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
+						auto* sfasPC = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, PlayerIndex));
 						auto* gameUI = sfasPC->GetGameUI();
 						if (gameUI)
 						{
@@ -675,8 +790,7 @@ void AUnrealSFASCharacter::FireWeapon()
 							// Show reload prompt if weapon clip is empty.
 							if (Weapon->IsClipEmpty())
 							{
-								// Should the character auto reload when the weapon clip is empty?
-								//gameUI->ShowReloadPrompt(true);
+								// Auto reload the weapon when it is empty.
 								ReloadWeapon();
 							}
 						}

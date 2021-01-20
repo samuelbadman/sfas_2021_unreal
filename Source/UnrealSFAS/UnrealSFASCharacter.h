@@ -43,7 +43,7 @@ public:
 	void OnFinishedReload();
 
 	/** Spawns a weapon and updates the UI display with its information. */
-	void SpawnWeapon();
+	void SpawnWeapon(class UGameUI* GameUI);
 
 	FORCEINLINE int GetHitpoints() const { return Hitpoints; }
 
@@ -52,6 +52,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	FORCEINLINE class AWeapon* GetWeapon() const { return Weapon; }
+
+	void SetPlayerIndex(int32 Index);
+
+	/** Performs initial setup on the character once it has been possessed by its player controller. */
+	void SetupOnPossessed();
+
+	/** Sets whether this character can return to the main menu. */
+	void SetCanReturnToMainMenu(bool CanReturn);
 
 protected:
 
@@ -133,6 +141,9 @@ private:
 	void ReloadWeapon();
 
 	void PausePressed();
+	void PositiveMenuInputPressed();
+	void NegativeMenuInputPressed();
+	bool IsGamePaused() const;
 
 	void ShowHitMarker();
 	void HideHitMarker();
@@ -145,6 +156,9 @@ private:
 
 	/** Cancels the reload in progress, leaving the weapon magazine in the same state. */
 	void CancelReload();
+
+	/** Opens the main menu level. */
+	void ReturnToMainMenu();
 
 private:
 	float TargetBoomLength;
@@ -173,6 +187,10 @@ private:
 	int DamageDealt;
 
 	bool Reloading;
+
+	int32 PlayerIndex;
+
+	bool CanReturnToMainMenu;
 
 	///////////////////////////////////////////////////
 	/** Weapon category */

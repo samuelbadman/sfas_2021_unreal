@@ -10,6 +10,8 @@
 #include "UnrealSFASPlayerController.h"
 #include "GameUI.h"
 #include "DroneCharacter.h"
+#include "UnrealSFASGameInstance.h"
+#include "GameOver/GameOverUserWidget.h"
 
 AUnrealSFASGameMode::AUnrealSFASGameMode()
 {
@@ -42,6 +44,9 @@ AUnrealSFASGameMode::AUnrealSFASGameMode()
 	WaveStartSound = nullptr;
 	WaveCompleteSound = nullptr;
 	BackgroundMusic = nullptr;
+
+	StartingNumberOfPlayers = 0;
+	PlayersRemaining = 0;
 }
 
 void AUnrealSFASGameMode::NotifyDroneDestroyed()
@@ -59,6 +64,35 @@ void AUnrealSFASGameMode::NotifyDroneDestroyed()
 	}
 }
 
+void AUnrealSFASGameMode::OnPlayerDefeated()
+{
+	PlayersRemaining--;
+
+	if (PlayersRemaining == 0)
+	{
+		// Enable returning to the main menu.
+		auto* world = GetWorld();
+		if (world)
+		{
+			// For each player that started the game.
+			for (int i = 0; i < StartingNumberOfPlayers; i++)
+			{
+				// Show UI prompt in game over menu.
+				auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, i));
+				auto* gameOverUI = unrealSFASPlayerController->GetGameOverUI();
+				if (gameOverUI)
+				{
+					gameOverUI->ShowReturnPrompt();
+				}
+
+				// Enable returning to the main menu.
+				auto* unrealSFASCharacter = CastChecked<AUnrealSFASCharacter>(UGameplayStatics::GetPlayerCharacter(world, i));
+				unrealSFASCharacter->SetCanReturnToMainMenu(true);
+			}
+		}
+	}
+}
+
 void AUnrealSFASGameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -67,6 +101,26 @@ void AUnrealSFASGameMode::BeginPlay()
 	// Check the world is valid.
 	if (world)
 	{
+		// Get the game instance.
+		auto* gameInstance = CastChecked<UUnrealSFASGameInstance>(UGameplayStatics::GetGameInstance(world));
+
+		// Set players remaining to total number of players.
+		StartingNumberOfPlayers = gameInstance->GetNumberOfPlayers();
+		PlayersRemaining = StartingNumberOfPlayers;
+
+		// Create an additional player if one has joined.
+		if (PlayersRemaining == 2)
+		{
+			// Enable split screen
+			world->GetGameViewport()->SetForceDisableSplitscreen(false);
+
+			// Create and setup the second player.
+			auto* unrealSFASController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::CreatePlayer(world, 1));
+			unrealSFASController->SetPlayerIndex(1);
+			auto* newCharacter = CastChecked<AUnrealSFASCharacter>(UGameplayStatics::GetPlayerCharacter(world, 1));
+			newCharacter->SetPlayerIndex(1);
+		}
+
 		// Check the enemy spawn volume class has been set.
 		if (EnemySpawnVolumeClass)
 		{
@@ -126,10 +180,15 @@ void AUnrealSFASGameMode::StartWave(int WaveNumber)
 				}
 			}
 
-			// Update UI wave label.
-			auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
-			auto* GameUI = unrealSFASPlayerController->GetGameUI();
-			GameUI->SetWaveNumber(WaveNumber);
+			// Update UI wave label for each player in the game.
+			auto* unrealSFASGameInstance = CastChecked<UUnrealSFASGameInstance>(UGameplayStatics::GetGameInstance(world));
+			auto numPlayers = unrealSFASGameInstance->GetNumberOfPlayers();
+			for (int i = 0; i < numPlayers; i++)
+			{
+				auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, i));
+				auto* GameUI = unrealSFASPlayerController->GetGameUI();
+				GameUI->SetWaveNumber(WaveNumber);
+			}
 
 			// Call the wave started event.
 			OnWaveStart();
@@ -164,9 +223,12 @@ void AUnrealSFASGameMode::OnWaveComplete()
 			UGameplayStatics::PlaySound2D(world, WaveCompleteSound);
 		}
 
-		// Notify the wave has started.
-		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
-		unrealSFASPlayerController->GetGameUI()->ShowWaveStatusNotification(CurrentWaveNumber, true);
+		// Notify each player that the wave has started.
+		for (int i = 0; i < StartingNumberOfPlayers; i++)
+		{
+			auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, i));
+			unrealSFASPlayerController->GetGameUI()->ShowWaveStatusNotification(CurrentWaveNumber, true);
+		}
 
 		// Begin timer to hide notification.
 		GetWorldTimerManager().SetTimer(WaveNotificationTimerHandle, this, &AUnrealSFASGameMode::OnNotificationExpired, WaveNotificationDisplayDuration, false);
@@ -185,9 +247,12 @@ void AUnrealSFASGameMode::OnWaveStart()
 			UGameplayStatics::PlaySound2D(world, WaveStartSound);
 		}
 
-		// Notify the wave has been completed.
-		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
-		unrealSFASPlayerController->GetGameUI()->ShowWaveStatusNotification(CurrentWaveNumber, false);
+		// Notify each player that the wave has been completed.
+		for (int i = 0; i < StartingNumberOfPlayers; i++)
+		{
+			auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, i));
+			unrealSFASPlayerController->GetGameUI()->ShowWaveStatusNotification(CurrentWaveNumber, false);
+		}
 
 		// Begin timer to hide notification.
 		GetWorldTimerManager().SetTimer(WaveNotificationTimerHandle, this, &AUnrealSFASGameMode::OnNotificationExpired, WaveNotificationDisplayDuration, false);
@@ -201,8 +266,11 @@ void AUnrealSFASGameMode::OnNotificationExpired()
 	if (world)
 	{
 		// Hide the notifcation widget.
-		auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, 0));
-		unrealSFASPlayerController->GetGameUI()->HideWaveStatusNotification();
+		for (int i = 0; i < StartingNumberOfPlayers; i++)
+		{
+			auto* unrealSFASPlayerController = CastChecked<AUnrealSFASPlayerController>(UGameplayStatics::GetPlayerController(world, i));
+			unrealSFASPlayerController->GetGameUI()->HideWaveStatusNotification();
+		}
 	}
 }
 

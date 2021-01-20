@@ -56,6 +56,10 @@ private:
 
 	/** Set in the derived blueprint */
 	UPROPERTY(EditDefaultsOnly, Category = "Drone AI", meta = (AllowPrivateAccess = "true"))
+	FName TargetBlackboardValueName;
+
+	/** Set in the derived blueprint */
+	UPROPERTY(EditDefaultsOnly, Category = "Drone AI", meta = (AllowPrivateAccess = "true"))
 	float MaxShotDistance;
 
 	/** Set in the derived blueprint */
