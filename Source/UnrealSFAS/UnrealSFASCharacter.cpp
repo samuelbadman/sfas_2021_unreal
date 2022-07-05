@@ -753,7 +753,8 @@ void AUnrealSFASCharacter::FireWeapon()
 							true))
 						{
 							// Check if the hit actor has the "Enemy" tag.
-							if (hit.Actor->ActorHasTag(FName("Enemy")))
+							auto* hitActor = hit.GetActor(); // Replaced hit.Actor from UE4
+							if (hitActor->ActorHasTag(FName("Enemy")))
 							{
 								// Show the hit marker. Start a timer to hide the hitmarker.
 								ShowHitMarker();
@@ -761,7 +762,7 @@ void AUnrealSFASCharacter::FireWeapon()
 								GetWorldTimerManager().SetTimer(HitMarkerTimerHandle, this, &AUnrealSFASCharacter::HideHitMarker, HitMarkerDisplayDuration, false);
 
 								// Cast the hit actor to ADroneCharacter.
-								auto* enemy = Cast<ADroneCharacter>(hit.Actor);
+								auto* enemy = Cast<ADroneCharacter>(hitActor);
 
 								// Check the cast was successful.
 								if (enemy)
