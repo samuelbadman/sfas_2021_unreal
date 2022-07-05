@@ -1,3 +1,9 @@
+# Generated project files
+[Ii]ntermediate/
+[Ss]aved/
+[Dd]erivedDataCache/
+[Bb]inaries/
+
 # Visual Studio 2015 user specific files
 .vs/
 
